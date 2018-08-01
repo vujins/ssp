@@ -7,7 +7,7 @@
 #include "Simbol.h"
 #include "OpCode.h"
 
-#define OUTPUT_FILE "C:\\Users\\vana\\Desktop\\ss\\output.txt"
+#define OUTPUT_FILE "C:\\Users\\vana\\Documents\\ssp\\output.txt"
 
 class Assembler {
 public:

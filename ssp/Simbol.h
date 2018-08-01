@@ -39,11 +39,8 @@ public:
 	SimbolTable();
 	~SimbolTable();
 
-	int put(string key, Simbol* simbol);
-	//-1 ako vec postoji
-	//0 ako je ok
+	bool put(string key, Simbol* simbol);
 	void write(ofstream &filestream);
-	//TODO metoda za pisanje tabele simbola u fajl
 
 private:
 	map<string, Simbol*> table;

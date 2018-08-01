@@ -57,11 +57,11 @@ SimbolTable::~SimbolTable() {
 		delete simbol.second;
 }
 
-int SimbolTable::put(string key, Simbol * simbol) {
+bool SimbolTable::put(string key, Simbol * simbol) {
 	if (table[key] != nullptr)
-		return -1;
+		return false;
 	table[key] = simbol;
-	return 0;
+	return true;
 }
 
 void SimbolTable::write(ofstream &filestream) {

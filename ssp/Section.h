@@ -15,7 +15,7 @@ public:
 	string get_name();
 	int get_start_address();
 	int get_end_address();
-	int get_length();
+	int get_location_counter();
 
 	void increment_lc(int increment);
 
@@ -40,7 +40,7 @@ public:
 	SectionTable(int start_address_);
 	~SectionTable();
 
-	void put(Section *section);
+	bool put(Section *section);
 	void write(ofstream &filestream);
 
 private:

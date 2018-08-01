@@ -1,11 +1,11 @@
 #include "OpCode.h"
+#include <algorithm>
 
 regex OpCode::regex_char(".char");
 regex OpCode::regex_word(".word");
 regex OpCode::regex_long(".long");
 regex OpCode::regex_skip(".skip");
 regex OpCode::regex_align(".align");
-
 
 OpCode::OpCode(string name_, string opcode_):
 	name(name_), opcode(opcode_) {}
@@ -24,9 +24,10 @@ const string OpCode::get_opcode() const {
 }
 
 int OpCode::length_of_directive(string line, int lc) {
-	if (regex_search(line, regex_char)) return 1;
-	if (regex_search(line, regex_word)) return 2;
-	if (regex_search(line, regex_long)) return 4;
+	int count = std::count(line.begin(), line.end(), ',');
+	if (regex_search(line, regex_char)) return 1 + count;
+	if (regex_search(line, regex_word)) return 2 + 2 * count;
+	if (regex_search(line, regex_long)) return 4 + 4 * count;
 	if (regex_search(line, regex_skip)) {
 		int position = line.rfind(" ");
 		return stoi(line.substr(position));

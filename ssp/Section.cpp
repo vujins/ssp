@@ -17,7 +17,7 @@ int Section::get_end_address() {
 	return end_address;
 }
 
-int Section::get_length() {
+int Section::get_location_counter() {
 	return length;
 }
 
@@ -48,12 +48,17 @@ SectionTable::~SectionTable() {
 		delete *it;
 }
 
-void SectionTable::put(Section *section) {
+bool SectionTable::put(Section *section) {
+	//ovde bi eventualno mogla da dodje provera da li selcija vec postoji
+	//ali ta provera vec postoji za simbol i pre ce se izvrsiti nego za sekciju
+
 	section->set_start_address(start_address);
 	section->set_end_address();
-	start_address += section->get_length();
+	start_address += section->get_location_counter();
 
 	table.push_back(section);
+
+	return true;
 }
 
 void SectionTable::write(ofstream &filestream) {
@@ -62,7 +67,7 @@ void SectionTable::write(ofstream &filestream) {
 		"\t" << "length" << endl;
 	for (auto it = table.begin(); it != table.end(); it++) {
 		filestream << (*it)->get_name() << "\t\t" << (*it)->get_start_address() << "\t\t" <<
-			(*it)->get_end_address() << "\t\t" << (*it)->get_length() << endl;
+			(*it)->get_end_address() << "\t\t" << (*it)->get_location_counter() << endl;
 	}
 	filestream << endl;
 }
