@@ -11,7 +11,7 @@
 
 class Assembler {
 public:
-	Assembler(const char *file, int start_address);
+	Assembler(const char *file, int start_address_);
 	~Assembler();
 
 	void first_pass();
@@ -19,6 +19,7 @@ public:
 	void output();
 
 private:
+	int start_address;
 	OpCodeTable table_opcode;
 	SectionTable table_section;
 	SimbolTable table_simbol;

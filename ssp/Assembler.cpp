@@ -1,7 +1,7 @@
 #include "Assembler.h"
 
-Assembler::Assembler(const char *file, int start_address): 
-	table_section(start_address), end(".end") {
+Assembler::Assembler(const char *file, int start_address_): 
+	start_address(start_address_), table_section(start_address_), end(".end") {
 
 	if (start_address == 0)
 		throw invalid_argument("Start address is invalid!");
@@ -17,6 +17,7 @@ Assembler::~Assembler() {
 }
 
 void Assembler::first_pass() {
+	int location_counter = 0;
 	Section *current_section = nullptr;
 
 	while (!input_filestream.eof()) {
@@ -29,11 +30,13 @@ void Assembler::first_pass() {
 				table_section.put(current_section);
 			break;
 		}
+		//tabela sekcija
 		if (Section::is_section(line)) {
 			if (current_section)
 				table_section.put(current_section);
 			current_section = new Section(line);
 		}
+		//tabela simbola
 		if (Simbol::is_label(line) || Section::is_section(line)) {
 			string name;
 			if (Section::is_section(line)) name = line;
@@ -45,18 +48,24 @@ void Assembler::first_pass() {
 				throw invalid_argument("Simbol needs to be in a section!");
 
 			if (!table_simbol.put(name, new Simbol(name, current_section->get_name(),
-				current_section->get_location_counter(), "local")))
+				start_address + location_counter, "local")))
 				throw invalid_argument("Two simbols with the same name are not allowed!");
 		}
 		//ako je jedna od direktiva .char .word .long .align .skip
 		//lc se prenosi u funkciju zbog izracunavanja align
 		int increment = OpCode::length_of_directive(line, current_section->get_location_counter());
 		if (increment) {
+			location_counter += increment;
 			current_section->increment_lc(increment);
 			continue;
 		}
 
-		//TODO ocitaj duzinu instrukcije
+		increment = OpCode::length_of_operation(line);
+		if (increment) {
+			location_counter += increment;
+			current_section->increment_lc(increment);
+			continue;
+		}
 	}
 }
 

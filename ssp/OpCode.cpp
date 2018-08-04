@@ -7,6 +7,13 @@ regex OpCode::regex_long(".long");
 regex OpCode::regex_skip(".skip");
 regex OpCode::regex_align(".align");
 
+regex OpCode::regex_comma(",");
+regex OpCode::regex_register("(r[0-7])$");
+regex OpCode::regex_registers("(r[0-7],r[0-7])$");
+
+regex OpCode::regex_operation("eq[a-z]{2,4}|ne[a-z]{2,4}|gt[a-z]{2,4}|al[a-z]{2,4}");
+regex OpCode::regex_no_operands("(eq[a-z]{2,4})$|(ne[a-z]{2,4})$|(gt[a-z]{2,4})$|(al[a-z]{2,4})$");
+
 OpCode::OpCode(string name_, string opcode_):
 	name(name_), opcode(opcode_) {}
 
@@ -39,6 +46,34 @@ int OpCode::length_of_directive(string line, int lc) {
 	}
 
 	return 0;
+}
+
+int OpCode::length_of_operation(string line) {
+	if (!regex_search(line, regex_operation)) return 0; //nije operacija
+
+	if (regex_search(line, regex_no_operands)) {
+		//nema operanda
+		return 2;
+	}
+	if (regex_search(line, regex_comma)) {
+		//dva operanda
+		if (regex_search(line, regex_registers)) {
+			return 2;
+		}
+		else {
+			return 4;
+		}
+	}
+	else {
+		//jedan operand
+
+		if (regex_search(line, regex_register)) {
+			return 2;
+		}
+		else {
+			return 4;
+		}
+	}
 }
 
 OpCodeTable::OpCodeTable() {

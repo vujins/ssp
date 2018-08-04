@@ -16,12 +16,15 @@ public:
 	const string get_opcode() const;
 
 	static int length_of_directive(string line, int lc);
+	static int length_of_operation(string line);
 
 private:
 	const string name;
 	const string opcode;
 
 	static regex regex_char, regex_word, regex_long, regex_skip, regex_align;
+	static regex regex_comma, regex_registers, regex_register;
+	static regex regex_operation, regex_no_operands;
 };
 
 class OpCodeTable {
