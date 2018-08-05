@@ -99,6 +99,9 @@ void Assembler::second_pass() {
 			if (code.empty()) throw invalid_argument("Direktiva .char .word ili .long ima preveliku vrednost!");
 			current_section->append_code(code);
 		}
+		if (OpCode::is_instruction(line)) {
+			
+		}
 
 		increase_location_counter(line, location_counter, current_section);
 	}
@@ -113,9 +116,11 @@ void Assembler::output() {
 	table_simbol.write(output_filestream);
 
 	for (auto it : table_section.get_table()) {
+		if (!(it.first).compare(".bss")) continue;
 		it.second->write_rel_table(output_filestream);
 	}
 	for (auto it : table_section.get_table()) {
+		if (!(it.first).compare(".bss")) continue;
 		it.second->write_code(output_filestream);
 	}
 

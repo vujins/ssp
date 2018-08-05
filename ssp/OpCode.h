@@ -23,6 +23,7 @@ public:
 	static bool is_skip(string line);
 	static bool is_align(string line);
 	static bool is_directive(string line);
+	static bool is_instruction(string line);
 
 	static string get_skip_code(string line);
 	static string get_align_code(string line, int lc);

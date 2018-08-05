@@ -12,7 +12,7 @@ regex OpCode::regex_comma(",");
 regex OpCode::regex_register("(r[0-7])$");
 regex OpCode::regex_registers("(r[0-7],r[0-7])$");
 
-regex OpCode::regex_operation("eq[a-z]{2,4}|ne[a-z]{2,4}|gt[a-z]{2,4}|al[a-z]{2,4}");
+regex OpCode::regex_operation("^eq[a-z]{2,4}|^ne[a-z]{2,4}|^gt[a-z]{2,4}|^al[a-z]{2,4}");
 regex OpCode::regex_no_operands("(eq[a-z]{2,4})$|(ne[a-z]{2,4})$|(gt[a-z]{2,4})$|(al[a-z]{2,4})$");
 
 regex OpCode::regex_global("^\\.global");
@@ -103,6 +103,12 @@ bool OpCode::is_directive(string line) {
 	return false;
 }
 
+bool OpCode::is_instruction(string line) {
+	if (regex_search(line, regex_operation)) return true;
+
+	return false;
+}
+
 string OpCode::get_skip_code(string line) {
 	size_t position = line.find(" ");
 	line = line.substr(position);
@@ -142,11 +148,12 @@ string OpCode::get_directive_code(string line) {
 
 		if (hex.size() > 2 * multiplier) return ""; //hex vrednost veca od dozvoljene
 
-		for (int i = 0; i < 2 * multiplier; i++) {
-			if (i < hex.size()) code << hex[hex.size() - i - 1];
+		for (int i = 0; i < multiplier; i++) {
+			if (i*multiplier + 1 < hex.size()) code << hex[hex.size() - i];
+			else code << "0";
+			if (i*multiplier < hex.size()) code << hex[hex.size() - i - 1];
 			else code << "0";
 		}
-
 		line = result.suffix().str();
 	}
 	return code.str();
