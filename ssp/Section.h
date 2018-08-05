@@ -3,7 +3,7 @@
 
 #include <string>
 #include <regex>
-#include <vector>
+#include <map>
 #include <fstream>
 
 #include "Realocation.h"
@@ -24,6 +24,7 @@ public:
 	static bool is_section(string line);
 
 	void write_rel_table(ofstream &filestream);
+	void write_code(ofstream &filestream);
 
 protected:
 	void set_start_address(int start_address_);
@@ -39,6 +40,7 @@ private:
 	int length;
 
 	RealocationTable rel_table;
+	vector<string> code;
 };
 
 class SectionTable {
@@ -47,12 +49,14 @@ public:
 	~SectionTable();
 
 	bool put(Section *section);
-	const vector<Section*> get_table() const;
+	Section* get(string name);
+	const map<string, Section*> get_table() const;
+
 	void write(ofstream &filestream);
 
 private:
 	int start_address;
-	vector<Section*> table;
+	map<string, Section*> table;
 };
 
 #endif

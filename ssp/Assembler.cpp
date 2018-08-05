@@ -1,4 +1,5 @@
 #include "Assembler.h"
+#include <iostream> //TODO obrisi ovo
 
 Assembler::Assembler(const char *file, int start_address_): 
 	start_address(start_address_), table_section(start_address_), end(".end") {
@@ -24,7 +25,7 @@ void Assembler::first_pass() {
 		string line;
 		getline(input_filestream, line);
 
-		if (line.length() == 0) continue;
+		if (line.empty()) continue;
 		if (regex_search(line, end)) {
 			if (current_section)
 				table_section.put(current_section);
@@ -52,7 +53,37 @@ void Assembler::first_pass() {
 				throw invalid_argument("Two simbols with the same name are not allowed!");
 		}
 
-		increase_location_counter(line, location_counter, current_section);
+		//prenosi se 1 zbog prvog prolaza
+		increase_location_counter(line, location_counter, current_section, 1);
+	}
+
+	input_filestream.clear();
+	input_filestream.seekg(0, ios::beg);
+}
+
+void Assembler::second_pass() {
+	int location_counter = 0;
+	Section *current_section = nullptr;
+
+	while (!input_filestream.eof()) {
+		string line;
+		getline(input_filestream, line);
+
+		if (line.empty()) continue;
+		if (regex_search(line, end)) break;
+		if (Section::is_section(line)) {
+			current_section = table_section.get(line);
+			if (!current_section) throw invalid_argument("Section name invalid!");
+			continue;
+		}
+		if (Simbol::is_label(line)) {
+			cout << line << endl;
+			line = Simbol::cut_label_from_line(line); //a: mov r1, r2 -> mov r1, r2
+			if (line.empty()) continue;
+		}
+
+		//prenosi se 2 zbog drugog prolaza
+		increase_location_counter(line, location_counter, current_section, 2);
 	}
 }
 
@@ -64,26 +95,32 @@ void Assembler::output() {
 	table_section.write(output_filestream);
 	table_simbol.write(output_filestream);
 
-	for (Section *section : table_section.get_table())
-		section->write_rel_table(output_filestream);
+	for (auto it : table_section.get_table()) {
+		if ((it.second->get_name()).compare(".bss") == 0) continue;
+		it.second->write_rel_table(output_filestream);
+	}
+	for (auto it : table_section.get_table()) {
+		if ((it.second->get_name()).compare(".bss") == 0) continue;
+		it.second->write_code(output_filestream);
+	}
 
 	output_filestream.close();
 }
 
-void Assembler::increase_location_counter(string line, int & location_counter, Section * current_section) {
+void Assembler::increase_location_counter(string line, int & location_counter, Section * current_section, int pass) {
 	//ako je jedna od direktiva .char .word .long .align .skip
 	//lc se prenosi u funkciju zbog izracunavanja align
 	int increment = OpCode::length_of_directive(line, current_section->get_location_counter());
 	if (increment) {
 		location_counter += increment;
-		current_section->increment_lc(increment);
+		if (pass == 1) current_section->increment_lc(increment);
 		return;
 	}
 
 	increment = OpCode::length_of_operation(line);
 	if (increment) {
 		location_counter += increment;
-		current_section->increment_lc(increment);
+		if (pass == 1) current_section->increment_lc(increment);
 		return;
 	}
 

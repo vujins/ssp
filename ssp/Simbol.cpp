@@ -4,7 +4,7 @@
 regex Simbol::simbol_regex("^[a-z0-9]+:");
 int Simbol::sindex = 0;
 
-Simbol::Simbol(string name_, string section_, int value_, string visibility_):
+Simbol::Simbol(string name_, string section_, int value_, string visibility_) :
 	name(name_), section(section_), value(value_), visibility(visibility_), index(sindex++) {}
 
 Simbol::~Simbol() {
@@ -44,9 +44,11 @@ string Simbol::get_label_name(string line) {
 }
 
 string Simbol::cut_label_from_line(string line) {
-	int position = line.find(":");
-
-	return line.substr(position + 2);
+	size_t position = line.find(":");
+	if (position + 1 == line.size())
+		return line.substr(position + 1);
+	else
+		return line.substr(position + 2);
 }
 
 SimbolTable::SimbolTable() {

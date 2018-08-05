@@ -16,11 +16,12 @@ public:
 	~Assembler();
 
 	void first_pass();
+	void second_pass();
 
 	void output();
 
 private:
-	void increase_location_counter(string line, int &location_counter, Section *current_section);
+	void increase_location_counter(string line, int &location_counter, Section *current_section, int pass);
 
 	int start_address;
 	OpCodeTable table_opcode;
