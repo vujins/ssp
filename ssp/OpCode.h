@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <regex>
+#include <sstream>
 
 using namespace std;
 
@@ -25,6 +26,7 @@ public:
 
 	static string get_skip_code(string line);
 	static string get_align_code(string line, int lc);
+	static string get_directive_code(string line);
 
 private:
 	const string name;
@@ -35,6 +37,8 @@ private:
 	static regex regex_operation, regex_no_operands;
 
 	static regex regex_global;
+
+	static string decimal_to_hex(int br);
 };
 
 class OpCodeTable {

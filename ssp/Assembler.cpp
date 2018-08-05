@@ -1,7 +1,8 @@
 #include "Assembler.h"
+
 #include <iostream> //TODO obrisi ovo
 
-Assembler::Assembler(const char *file, int start_address_): 
+Assembler::Assembler(const char *file, int start_address_) :
 	start_address(start_address_), table_section(start_address_), end("^\\.end") {
 
 	if (start_address == 0)
@@ -94,7 +95,9 @@ void Assembler::second_pass() {
 			current_section->append_code(code);
 		}
 		if (OpCode::is_directive(line)) {
-
+			string code = OpCode::get_directive_code(line);
+			if (code.empty()) throw invalid_argument("Direktiva .char .word ili .long ima preveliku vrednost!");
+			current_section->append_code(code);
 		}
 
 		increase_location_counter(line, location_counter, current_section);

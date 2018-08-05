@@ -17,7 +17,7 @@ regex OpCode::regex_no_operands("(eq[a-z]{2,4})$|(ne[a-z]{2,4})$|(gt[a-z]{2,4})$
 
 regex OpCode::regex_global("^\\.global");
 
-OpCode::OpCode(string name_, string opcode_):
+OpCode::OpCode(string name_, string opcode_) :
 	name(name_), opcode(opcode_) {}
 
 
@@ -126,6 +126,51 @@ string OpCode::get_align_code(string line, int lc) {
 		code.append("00");
 
 	return code;
+}
+
+string OpCode::get_directive_code(string line) {
+	stringstream code;
+	int multiplier;
+	if (regex_search(line, regex_char)) multiplier = 1;
+	if (regex_search(line, regex_word)) multiplier = 2;
+	if (regex_search(line, regex_long)) multiplier = 4;
+	
+	regex regex("[0-9]+");
+	smatch result;
+	while (regex_search(line, result, regex)) {
+		string hex = decimal_to_hex(stoi(result[0]));
+
+		if (hex.size() > 2 * multiplier) return ""; //hex vrednost veca od dozvoljene
+
+		for (int i = 0; i < 2 * multiplier; i++) {
+			if (i < hex.size()) code << hex[hex.size() - i - 1];
+			else code << "0";
+		}
+
+		line = result.suffix().str();
+	}
+	return code.str();
+}
+
+string OpCode::decimal_to_hex(int br) {
+	string hexbr;
+	int rem;
+	if (br == 0) return "0";
+	while (br > 0) {
+		rem = br % 16;
+		switch (rem)
+		{
+		case 10: hexbr = 'A' + hexbr; break;
+		case 11: hexbr = 'B' + hexbr; break;
+		case 12: hexbr = "C" + hexbr; break;
+		case 13: hexbr = "D" + hexbr; break;
+		case 14: hexbr = "E" + hexbr; break;
+		case 15: hexbr = "F" + hexbr; break;
+		default: hexbr = to_string(rem) + hexbr;
+		}
+		br /= 16;
+	}
+	return hexbr;
 }
 
 OpCodeTable::OpCodeTable() {
