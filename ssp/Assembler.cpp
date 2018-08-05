@@ -51,21 +51,8 @@ void Assembler::first_pass() {
 				start_address + location_counter, "local")))
 				throw invalid_argument("Two simbols with the same name are not allowed!");
 		}
-		//ako je jedna od direktiva .char .word .long .align .skip
-		//lc se prenosi u funkciju zbog izracunavanja align
-		int increment = OpCode::length_of_directive(line, current_section->get_location_counter());
-		if (increment) {
-			location_counter += increment;
-			current_section->increment_lc(increment);
-			continue;
-		}
 
-		increment = OpCode::length_of_operation(line);
-		if (increment) {
-			location_counter += increment;
-			current_section->increment_lc(increment);
-			continue;
-		}
+		increase_location_counter(line, location_counter, current_section);
 	}
 }
 
@@ -77,5 +64,27 @@ void Assembler::output() {
 	table_section.write(output_filestream);
 	table_simbol.write(output_filestream);
 
+	for (Section *section : table_section.get_table())
+		section->write_rel_table(output_filestream);
+
 	output_filestream.close();
+}
+
+void Assembler::increase_location_counter(string line, int & location_counter, Section * current_section) {
+	//ako je jedna od direktiva .char .word .long .align .skip
+	//lc se prenosi u funkciju zbog izracunavanja align
+	int increment = OpCode::length_of_directive(line, current_section->get_location_counter());
+	if (increment) {
+		location_counter += increment;
+		current_section->increment_lc(increment);
+		return;
+	}
+
+	increment = OpCode::length_of_operation(line);
+	if (increment) {
+		location_counter += increment;
+		current_section->increment_lc(increment);
+		return;
+	}
+
 }

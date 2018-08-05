@@ -6,6 +6,8 @@
 #include <vector>
 #include <fstream>
 
+#include "Realocation.h"
+
 using namespace std;
 
 class Section {
@@ -21,6 +23,8 @@ public:
 
 	static bool is_section(string line);
 
+	void write_rel_table(ofstream &filestream);
+
 protected:
 	void set_start_address(int start_address_);
 	void set_end_address();
@@ -33,6 +37,8 @@ private:
 	int start_address;
 	int end_address;
 	int length;
+
+	RealocationTable rel_table;
 };
 
 class SectionTable {
@@ -41,6 +47,7 @@ public:
 	~SectionTable();
 
 	bool put(Section *section);
+	const vector<Section*> get_table() const;
 	void write(ofstream &filestream);
 
 private:

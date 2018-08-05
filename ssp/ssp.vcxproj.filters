@@ -36,6 +36,9 @@
     <ClCompile Include="Assembler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Realocation.cpp">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Simbol.h">
@@ -49,6 +52,9 @@
     </ClInclude>
     <ClInclude Include="Assembler.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Realocation.h">
+      <Filter>Header Files\Tables</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

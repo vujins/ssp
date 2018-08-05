@@ -1,4 +1,5 @@
 #include "Simbol.h"
+#include <set>
 
 regex Simbol::simbol_regex("^[a-z0-9]+:");
 int Simbol::sindex = 0;
@@ -64,11 +65,24 @@ bool SimbolTable::put(string key, Simbol * simbol) {
 	return true;
 }
 
+struct comp
+{
+	bool operator()(const pair<std::string, Simbol*>& l, const pair<std::string, Simbol*>& r) const
+	{
+		if (l.second != r.second)
+			return l.second->get_index() < r.second->get_index();
+
+		return l.first < r.first;
+	}
+};
+
 void SimbolTable::write(ofstream &filestream) {
-	filestream << "Simbol table" << endl;
-	filestream << "name" << "\t\t" << "section" << "\t\t" << "value" << "\t\t" << "visibility" <<
+	std::set<std::pair<std::string, Simbol*>, comp> set(table.begin(), table.end());
+
+	filestream << "#Simbol table" << endl;
+	filestream << "#name" << "\t\t" << "section" << "\t\t" << "value" << "\t\t" << "visibility" <<
 		"\t" << "index" << endl;
-	for (auto const &simbol : table) {
+	for (auto const &simbol : set) {
 		filestream << simbol.second->get_name() << "\t\t" << simbol.second->get_section() <<
 			"\t\t" << simbol.second->get_value() << "\t\t" << simbol.second->get_visibility() <<
 			"\t\t" << simbol.second->get_index() << endl;

@@ -32,6 +32,11 @@ bool Section::is_section(string line) {
 	return false;
 }
 
+void Section::write_rel_table(ofstream & filestream) {
+	filestream << "#Realocation table for " << name << endl;
+	rel_table.write(filestream);
+}
+
 void Section::set_start_address(int start_address_) {
 	start_address = start_address_;
 }
@@ -61,9 +66,13 @@ bool SectionTable::put(Section *section) {
 	return true;
 }
 
+const vector<Section*> SectionTable::get_table() const {
+	return table;
+}
+
 void SectionTable::write(ofstream &filestream) {
-	filestream << "Section table" << endl;
-	filestream << "name" << "\t\t" << "start_address" << "\t" << "end_address" <<
+	filestream << "#Section table" << endl;
+	filestream << "#name" << "\t\t" << "start_address" << "\t" << "end_address" <<
 		"\t" << "length" << endl;
 	for (auto it = table.begin(); it != table.end(); it++) {
 		filestream << (*it)->get_name() << "\t\t" << (*it)->get_start_address() << "\t\t" <<

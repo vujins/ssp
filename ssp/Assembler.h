@@ -7,7 +7,8 @@
 #include "Simbol.h"
 #include "OpCode.h"
 
-#define OUTPUT_FILE "C:\\Users\\vana\\Documents\\ssp\\output.txt"
+//TODO promeni define kad budes radio javni test
+#define OUTPUT_FILE "C:\\Users\\vana\\Documents\\ssp\\tests\\output.txt"
 
 class Assembler {
 public:
@@ -19,6 +20,8 @@ public:
 	void output();
 
 private:
+	void increase_location_counter(string line, int &location_counter, Section *current_section);
+
 	int start_address;
 	OpCodeTable table_opcode;
 	SectionTable table_section;
