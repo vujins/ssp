@@ -20,6 +20,7 @@ public:
 	int get_location_counter();
 
 	void increment_lc(int increment);
+	void reset_location_counter();
 
 	static bool is_section(string line);
 

@@ -26,6 +26,10 @@ void Section::increment_lc(int increment) {
 	length += increment;
 }
 
+void Section::reset_location_counter() {
+	length = 0;
+}
+
 bool Section::is_section(string line) {
 	if (regex_match(line, section_regex))
 		return true;

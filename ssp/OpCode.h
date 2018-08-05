@@ -17,15 +17,20 @@ public:
 
 	static int length_of_directive(string line, int lc);
 	static int length_of_operation(string line);
+
 	static bool is_global(string line);
 	static bool is_skip(string line);
+	static bool is_align(string line);
+	static bool is_directive(string line);
+
 	static string get_skip_code(string line);
+	static string get_align_code(string line, int lc);
 
 private:
 	const string name;
 	const string opcode;
 
-	static regex regex_char, regex_word, regex_long, regex_skip, regex_align;
+	static regex regex_char, regex_word, regex_long, regex_skip, regex_align, regex_directive;
 	static regex regex_comma, regex_registers, regex_register;
 	static regex regex_operation, regex_no_operands;
 

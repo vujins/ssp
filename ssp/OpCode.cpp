@@ -1,6 +1,7 @@
 #include "OpCode.h"
 #include <algorithm>
 
+regex OpCode::regex_directive("^\\.char|^\\.word|^\\.long");
 regex OpCode::regex_char("^\\.char");
 regex OpCode::regex_word("^\\.word");
 regex OpCode::regex_long("^\\.long");
@@ -90,6 +91,18 @@ bool OpCode::is_skip(string line) {
 	return false;
 }
 
+bool OpCode::is_align(string line) {
+	if (regex_search(line, regex_align)) return true;
+
+	return false;
+}
+
+bool OpCode::is_directive(string line) {
+	if (regex_search(line, regex_directive)) return true;
+
+	return false;
+}
+
 string OpCode::get_skip_code(string line) {
 	size_t position = line.find(" ");
 	line = line.substr(position);
@@ -98,6 +111,19 @@ string OpCode::get_skip_code(string line) {
 	for (int i = 0; i < skip; i++) {
 		code.append("00");
 	}
+
+	return code;
+}
+
+string OpCode::get_align_code(string line, int lc) {
+	size_t position = line.find(" ");
+	line = line.substr(position);
+	int align = stoi(line);
+	int fill = (align - lc % align) % align;
+
+	string code;
+	for (int i = 0; i < fill; i++)
+		code.append("00");
 
 	return code;
 }

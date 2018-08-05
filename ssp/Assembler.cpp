@@ -53,9 +53,10 @@ void Assembler::first_pass() {
 				throw invalid_argument("Two simbols with the same name are not allowed!");
 		}
 
-		//prenosi se 1 zbog prvog prolaza
-		increase_location_counter(line, location_counter, current_section, 1);
+		increase_location_counter(line, location_counter, current_section);
 	}
+	for (auto it : table_section.get_table())
+		it.second->reset_location_counter();
 
 	input_filestream.clear();
 	input_filestream.seekg(0, ios::beg);
@@ -85,14 +86,18 @@ void Assembler::second_pass() {
 			continue;
 		}
 		if (OpCode::is_skip(line)) {
-			cout << line;
 			string code = OpCode::get_skip_code(line);
-			cout << " //" << code << endl;
 			current_section->append_code(code);
 		}
+		if (OpCode::is_align(line)) {
+			string code = OpCode::get_align_code(line, current_section->get_location_counter());
+			current_section->append_code(code);
+		}
+		if (OpCode::is_directive(line)) {
 
-		//prenosi se 2 zbog drugog prolaza
-		increase_location_counter(line, location_counter, current_section, 2);
+		}
+
+		increase_location_counter(line, location_counter, current_section);
 	}
 }
 
@@ -114,20 +119,20 @@ void Assembler::output() {
 	output_filestream.close();
 }
 
-void Assembler::increase_location_counter(string line, int & location_counter, Section * current_section, int pass) {
+void Assembler::increase_location_counter(string line, int & location_counter, Section * current_section) {
 	//ako je jedna od direktiva .char .word .long .align .skip
 	//lc se prenosi u funkciju zbog izracunavanja align
 	int increment = OpCode::length_of_directive(line, current_section->get_location_counter());
 	if (increment) {
 		location_counter += increment;
-		if (pass == 1) current_section->increment_lc(increment);
+		current_section->increment_lc(increment);
 		return;
 	}
 
 	increment = OpCode::length_of_operation(line);
 	if (increment) {
 		location_counter += increment;
-		if (pass == 1) current_section->increment_lc(increment);
+		current_section->increment_lc(increment);
 		return;
 	}
 
