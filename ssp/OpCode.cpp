@@ -1,11 +1,11 @@
 #include "OpCode.h"
 #include <algorithm>
 
-regex OpCode::regex_char(".char");
-regex OpCode::regex_word(".word");
-regex OpCode::regex_long(".long");
-regex OpCode::regex_skip(".skip");
-regex OpCode::regex_align(".align");
+regex OpCode::regex_char("^\\.char");
+regex OpCode::regex_word("^\\.word");
+regex OpCode::regex_long("^\\.long");
+regex OpCode::regex_skip("^\\.skip");
+regex OpCode::regex_align("^\\.align");
 
 regex OpCode::regex_comma(",");
 regex OpCode::regex_register("(r[0-7])$");
@@ -13,6 +13,8 @@ regex OpCode::regex_registers("(r[0-7],r[0-7])$");
 
 regex OpCode::regex_operation("eq[a-z]{2,4}|ne[a-z]{2,4}|gt[a-z]{2,4}|al[a-z]{2,4}");
 regex OpCode::regex_no_operands("(eq[a-z]{2,4})$|(ne[a-z]{2,4})$|(gt[a-z]{2,4})$|(al[a-z]{2,4})$");
+
+regex OpCode::regex_global("^\\.global");
 
 OpCode::OpCode(string name_, string opcode_):
 	name(name_), opcode(opcode_) {}
@@ -74,6 +76,30 @@ int OpCode::length_of_operation(string line) {
 			return 4;
 		}
 	}
+}
+
+bool OpCode::is_global(string line) {
+	if (regex_search(line, regex_global)) return true;
+
+	return false;
+}
+
+bool OpCode::is_skip(string line) {
+	if (regex_search(line, regex_skip)) return true;
+
+	return false;
+}
+
+string OpCode::get_skip_code(string line) {
+	size_t position = line.find(" ");
+	line = line.substr(position);
+	int skip = stoi(line);
+	string code;
+	for (int i = 0; i < skip; i++) {
+		code.append("00");
+	}
+
+	return code;
 }
 
 OpCodeTable::OpCodeTable() {

@@ -26,6 +26,7 @@ public:
 	void write_rel_table(ofstream &filestream);
 	void write_code(ofstream &filestream);
 
+	void append_code(string s);
 protected:
 	void set_start_address(int start_address_);
 	void set_end_address();

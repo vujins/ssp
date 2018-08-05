@@ -1,7 +1,7 @@
 #include "Section.h"
 #include <set>
 
-regex Section::section_regex = regex("^.data|.text|.bss|.rodata");
+regex Section::section_regex = regex("^\\.data|^\\.text|^\\.bss|^\\.rodata");
 
 Section::Section(string name_):
 	name(name_), start_address(0), end_address(0), length(0) {}
@@ -40,11 +40,15 @@ void Section::write_rel_table(ofstream & filestream) {
 
 void Section::write_code(ofstream & filestream) {
 	filestream << "#" << name << " code" << endl;
-	for (int i = 0; i < code.size(); i++) {
-		if (i % 4) filestream << " ";
+	for (unsigned i = 0; i < code.size(); i++) {
+		//if (i % 4) filestream << " "; //ne radi
 		filestream << code[i];
 	}
 	filestream << endl;
+}
+
+void Section::append_code(string s) {
+	code.push_back(s);
 }
 
 void Section::set_start_address(int start_address_) {

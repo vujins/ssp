@@ -2,7 +2,7 @@
 #include <iostream> //TODO obrisi ovo
 
 Assembler::Assembler(const char *file, int start_address_): 
-	start_address(start_address_), table_section(start_address_), end(".end") {
+	start_address(start_address_), table_section(start_address_), end("^\\.end") {
 
 	if (start_address == 0)
 		throw invalid_argument("Start address is invalid!");
@@ -43,7 +43,7 @@ void Assembler::first_pass() {
 			if (Section::is_section(line)) name = line;
 			else {
 				name = Simbol::get_label_name(line);
-				//line = Simbol::cut_label_from_line(line); //a: mov r1, r2 -> mov r1, r2
+				line = Simbol::cut_label_from_line(line); //a: mov r1, r2 -> mov r1, r2
 			}
 			if (current_section == nullptr)
 				throw invalid_argument("Simbol needs to be in a section!");
@@ -77,9 +77,18 @@ void Assembler::second_pass() {
 			continue;
 		}
 		if (Simbol::is_label(line)) {
-			cout << line << endl;
 			line = Simbol::cut_label_from_line(line); //a: mov r1, r2 -> mov r1, r2
 			if (line.empty()) continue;
+		}
+		if (OpCode::is_global(line)) {
+			table_simbol.add_global_simbols(line);
+			continue;
+		}
+		if (OpCode::is_skip(line)) {
+			cout << line;
+			string code = OpCode::get_skip_code(line);
+			cout << " //" << code << endl;
+			current_section->append_code(code);
 		}
 
 		//prenosi se 2 zbog drugog prolaza
@@ -96,11 +105,9 @@ void Assembler::output() {
 	table_simbol.write(output_filestream);
 
 	for (auto it : table_section.get_table()) {
-		if ((it.second->get_name()).compare(".bss") == 0) continue;
 		it.second->write_rel_table(output_filestream);
 	}
 	for (auto it : table_section.get_table()) {
-		if ((it.second->get_name()).compare(".bss") == 0) continue;
 		it.second->write_code(output_filestream);
 	}
 

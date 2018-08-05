@@ -17,6 +17,7 @@ public:
 	string get_section();
 	int get_value();
 	string get_visibility();
+	void set_viisibility(string visibility_);
 	int get_index();
 
 	static bool is_label(string line);
@@ -31,7 +32,7 @@ private:
 	static int sindex;
 	int index;
 
-	static regex simbol_regex;
+	static regex regex_simbol;
 };
 
 class SimbolTable {
@@ -41,6 +42,8 @@ public:
 
 	bool put(string key, Simbol* simbol);
 	void write(ofstream &filestream);
+
+	void add_global_simbols(string line);
 
 private:
 	map<string, Simbol*> table;

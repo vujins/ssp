@@ -1,7 +1,7 @@
 #include "Simbol.h"
 #include <set>
 
-regex Simbol::simbol_regex("^[a-z0-9]+:");
+regex Simbol::regex_simbol("^[a-z0-9]+:");
 int Simbol::sindex = 0;
 
 Simbol::Simbol(string name_, string section_, int value_, string visibility_) :
@@ -26,13 +26,16 @@ string Simbol::get_visibility() {
 	return visibility;
 }
 
+void Simbol::set_viisibility(string visibility_) {
+	visibility = visibility_;
+}
+
 int Simbol::get_index() {
 	return index;
 }
 
 bool Simbol::is_label(string line) {
-	if (regex_search(line, simbol_regex))
-		return true;
+	if (regex_search(line, regex_simbol)) return true;
 
 	return false;
 }
@@ -90,4 +93,20 @@ void SimbolTable::write(ofstream &filestream) {
 			"\t\t" << simbol.second->get_index() << endl;
 	}
 	filestream << endl;
+}
+
+void SimbolTable::add_global_simbols(string line) {
+	int position = line.find(" ");
+	line = line.substr(position + 1);
+
+	regex reg("[a-z|0-9]+");
+	smatch result;
+	while (regex_search(line, result, reg)) {
+		if (table[result[0]])
+			table[result[0]]->set_viisibility("global");
+		else
+			table[result[0]] = new Simbol(result[0], "UND", 0, "global");
+
+		line = result.suffix().str();
+	}
 }
