@@ -51,11 +51,9 @@ public:
 	OpCodeTable();
 	~OpCodeTable();
 
-	string get_instruction_code(string line);
+	OpCode* get_opcode(string key);
 
 private:
-	string get_operand_code(string operand, string &result);
-
 	unordered_map<string, OpCode*> table;
 
 	regex regex_alfanum;

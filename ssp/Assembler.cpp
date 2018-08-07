@@ -102,7 +102,7 @@ void Assembler::second_pass() {
 			current_section->append_code(code);
 		}
 		if (OpCode::is_instruction(line)) {
-			string bincode = table_opcode.get_instruction_code(line);
+			string bincode = get_instruction_code(line);
 			if (bincode.empty()) throw invalid_argument("Instruction not valid!");
 			stringstream code;
 			code << hex << stoll(bincode, nullptr, 2);
@@ -117,7 +117,7 @@ void Assembler::second_pass() {
 void Assembler::output() {
 	output_filestream.open(OUTPUT_FILE);
 	if (!output_filestream.is_open())
-		throw invalid_argument("Output file wrong!");
+		throw invalid_argument("Output file path does not exist!");
 
 	table_section.write(output_filestream);
 	table_simbol.write(output_filestream);
@@ -186,11 +186,105 @@ string Assembler::get_directive_code(string line) {
 		for (int i = 1; i <= multiplier; i++) {
 			if (((int)hex.size() - 2 * i) >= 0) code << hex[hex.size() - 2 * i];
 			else code << "0";
-			if (((int)hex.size() - 2 * i + 1) >= 0) code << hex[hex.size() - 2 * i + 1] << " ";
-			else code << "0 ";
+			if (((int)hex.size() - 2 * i + 1) >= 0) code << hex[hex.size() - 2 * i + 1];
+			else code << "0";
 		}
 		line = result.suffix().str();
 	}
 	return code.str();
 }
 
+
+string Assembler::get_instruction_code(string line) {
+	stringstream code;
+	regex instruction("((?:eq|ne|gt|al)[a-z]{2,4}) ?([^,]*),? ?([^,]*)");
+	smatch result;
+	string ins, op1, op2, first_operand, second_operand;
+
+	if (regex_match(line, result, instruction)) {
+		ins = result[1]; //instrukcija
+		op1 = result[2]; //prvi operand
+		op2 = result[3]; //drugi operand
+	}
+	else {
+		return "";
+	}
+
+	if (!ins.empty()) {
+		//ako je pogresno napisana instrukcija vraca gresku
+		if (!table_opcode.get_opcode(ins)) return "";
+		code << table_opcode.get_opcode(ins)->get_opcode();
+
+		//pseudo instrukcija ret
+		if (regex_match(ins, regex("^(eq|ne|gt|al)ret"))) {
+			code << "0111100000";
+			return code.str();
+		}
+		//TODO dodaj pseudo instrukciju jmp
+	}
+
+	//prvi operand
+	if (!op1.empty()) {
+		code << get_operand_code(op1, first_operand);
+	}
+	else {
+		code << "00000";
+	}
+
+	//drugi operand
+	if (!op2.empty()) {
+		code << get_operand_code(op2, second_operand);
+	}
+	else {
+		code << "00000";
+	}
+
+	//ako oba operanda zahtevaju dodatna 2 bajta
+	if (!first_operand.empty() && !second_operand.empty()) return "";
+	if (!first_operand.empty()) code << first_operand;
+	if (!second_operand.empty()) code << second_operand;
+
+	return code.str();
+}
+
+//00 neposredno ili PSW
+//01 za registarsko direktno
+//10 memorijsko
+//11 reg indirektno sa pomerajem
+string Assembler::get_operand_code(string operand, string &result) {
+	stringstream code;
+	smatch smatch;
+
+	if (regex_match(operand, OpCode::regex_register)) {
+		//registarsko direktno: r[0-7]
+		cout << "registarsko: " << operand << endl;
+		code << "01" << OpCode::dec_to_bin(stoi(operand.substr(1)), 3);
+	}
+	else if (regex_match(operand, OpCode::regex_immediate)) {
+		//neposredno: 20
+		cout << "neposredno: " << operand << endl;
+		result = OpCode::dec_to_bin(stoi(operand), 16);
+		code << "00000";
+	}
+	else if (regex_match(operand, OpCode::regex_mem_dir)) {
+		//mem dir: *20
+		cout << "mem dir: " << operand << endl;
+		result = OpCode::dec_to_bin(stoi(operand.substr(1)), 16);
+		code << "10000";
+	}
+	else if (regex_match(operand, smatch, OpCode::regex_reg_ind)) {
+		//reg ind: r6[30]
+		cout << "reg ind: " << operand << endl;
+		code << "11" << OpCode::dec_to_bin(stoi(smatch[1].str()), 3);
+		if (regex_match(smatch[2].str(), regex("[0-9]+"))) {
+			result = OpCode::dec_to_bin(stoi(smatch[2].str()), 16);
+		}
+		else {
+			int value = table_simbol.get(smatch[2])->get_value();
+			result = OpCode::dec_to_bin(value, 16);
+		}
+	}
+
+
+	return code.str();
+}

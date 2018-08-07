@@ -20,7 +20,7 @@ regex OpCode::regex_no_operands("(eq[a-z]{2,4})$|(ne[a-z]{2,4})$|(gt[a-z]{2,4})$
 regex OpCode::regex_register("(r[0-7])$");
 regex OpCode::regex_mem_dir("^(\\*[0-7]+)");
 regex OpCode::regex_immediate("^[0-7]+");
-regex OpCode::regex_reg_ind("^r([0-7])\\[([0-9]+)\\]");
+regex OpCode::regex_reg_ind("^r([0-7])\\[([0-9|a-z|A-Z]+)\\]");
 
 OpCode::OpCode(string name_, string opcode_) :
 	name(name_), opcode(opcode_) {}
@@ -84,90 +84,6 @@ int OpCode::length_of_operation(string line) {
 			return 4;
 		}
 	}
-}
-
-string OpCodeTable::get_instruction_code(string line) {
-	stringstream code;
-	smatch result;
-
-	string first_operand;
-	string second_operand;
-
-	if (regex_search(line, result, regex_alfanum)) {
-		//ako je pogresno napisana instrukcija vraca gresku
-		if (!table[result[0]]) return string();
-		code << table[result[0]]->get_opcode();
-
-		//pseudo instrukcija ret
-		if (result[0].str().substr(2).compare("ret") == 0) {
-			code << "0111100000";
-			return code.str();
-		}
-		//TODO dodaj pseudo instrukciju jmp
-
-		line = result.suffix().str();
-	}
-	
-	//prvi operand
-	if (regex_search(line, result, regex_alfanum)) {
-		code << get_operand_code(result[0].str(), first_operand);
-		line = result.suffix().str();
-	}
-	else {
-		code << "00000";
-	}
-
-	//drugi operand
-	if (regex_search(line, result, regex_alfanum)) {
-		code << get_operand_code(result[0].str(), second_operand);
-		line = result.suffix().str();
-	}
-	else {
-		code << "00000";
-	}
-
-	//ako oba operanda zahtevaju dodatna 2 bajta
-	if (!first_operand.empty() && !second_operand.empty()) return string();
-	if (!first_operand.empty()) code << first_operand;
-	if (!second_operand.empty()) code << second_operand;
-
-	return code.str();
-}
-
-//00 neposredno ili PSW
-//01 za registarsko direktno
-//10 memorijsko
-//11 reg indirektno sa pomerajem
-string OpCodeTable::get_operand_code(string operand, string &result) {
-	stringstream code;
-	smatch smatch;
-
-	if (regex_match(operand, OpCode::regex_register)) {
-		//registarsko direktno: r[0-7]
-		cout << "registarsko: " << operand << endl;
-		code << "01" << OpCode::dec_to_bin(stoi(operand.substr(1)), 3);
-	}
-	else if (regex_match(operand, OpCode::regex_immediate)) {
-		//neposredno: 20
-		cout << "neposredno: " << operand << endl;
-		result = OpCode::dec_to_bin(stoi(operand), 16);
-		code << "00000";
-	}
-	else if (regex_match(operand, OpCode::regex_mem_dir)) {
-		//mem dir: *20
-		cout << "mem dir: " << operand << endl;
-		result = OpCode::dec_to_bin(stoi(operand.substr(1)), 16);
-		code << "10000";
-	}
-	else if (regex_match(operand, smatch, OpCode::regex_reg_ind)) {
-		//reg ind: r6[30]
-		cout << "reg ind: " << operand << endl;
-		code << "11" << OpCode::dec_to_bin(stoi(smatch[1].str()), 3);
-		result = OpCode::dec_to_bin(stoi(smatch[2].str()), 16);
-	}
-
-
-	return code.str();
 }
 
 bool OpCode::is_global(string line) {
@@ -346,4 +262,8 @@ OpCodeTable::OpCodeTable() : regex_alfanum("[a-z|A-Z|0-9|\\*|\\[|\\]]+") {
 OpCodeTable::~OpCodeTable() {
 	for (auto const &opcode : table)
 		delete opcode.second;
+}
+
+OpCode* OpCodeTable::get_opcode(string key) {
+	return table[key];
 }
