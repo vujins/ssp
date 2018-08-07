@@ -21,6 +21,7 @@ public:
 	void output();
 
 private:
+	string get_directive_code(string line);
 	bool increase_location_counter(string line, int &location_counter, Section *current_section);
 
 	int start_address;

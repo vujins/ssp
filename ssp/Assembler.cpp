@@ -97,14 +97,14 @@ void Assembler::second_pass() {
 			current_section->append_code(code);
 		}
 		if (OpCode::is_directive(line)) {
-			string code = OpCode::get_directive_code(line);
+			string code = get_directive_code(line);
 			if (code.empty()) throw invalid_argument("Direktiva .char .word ili .long ima preveliku vrednost!");
 			current_section->append_code(code);
 		}
 		if (OpCode::is_instruction(line)) {
 			string bincode = table_opcode.get_instruction_code(line);
 			if (bincode.empty()) throw invalid_argument("Instruction not valid!");
-			stringstream code; 
+			stringstream code;
 			code << hex << stoll(bincode, nullptr, 2);
 			current_section->append_code(code.str());
 		}
@@ -155,3 +155,42 @@ bool Assembler::increase_location_counter(string line, int & location_counter, S
 
 	return true;
 }
+
+string Assembler::get_directive_code(string line) {
+	stringstream code;
+	size_t multiplier;
+	smatch directive;
+	if (regex_search(line, directive, OpCode::regex_char)) multiplier = 1;
+	if (regex_search(line, directive, OpCode::regex_word)) multiplier = 2;
+	if (regex_search(line, directive, OpCode::regex_long)) multiplier = 4;
+	line = directive.suffix().str();
+
+	regex alfanum("[0-9|a-z|A-Z]+");
+	smatch result;
+	while (regex_search(line, result, alfanum)) {
+		string hex;
+		if (regex_match(result[0].str(), regex("[0-9]+"))) {
+			//neposredna vrednost
+			hex = OpCode::decimal_to_hex(stoi(result[0]));
+		}
+		else {
+			//labela
+			Simbol *simbol = table_simbol.get(result[0].str());
+			if (simbol)
+				hex = OpCode::decimal_to_hex(simbol->get_value());
+			else
+				return string();
+		}
+		if (hex.size() > 2 * multiplier) return string(); //hex vrednost veca od dozvoljene
+
+		for (int i = 1; i <= multiplier; i++) {
+			if (((int)hex.size() - 2 * i) >= 0) code << hex[hex.size() - 2 * i];
+			else code << "0";
+			if (((int)hex.size() - 2 * i + 1) >= 0) code << hex[hex.size() - 2 * i + 1] << " ";
+			else code << "0 ";
+		}
+		line = result.suffix().str();
+	}
+	return code.str();
+}
+

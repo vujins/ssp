@@ -70,6 +70,10 @@ bool SimbolTable::put(string key, Simbol * simbol) {
 	return true;
 }
 
+Simbol * SimbolTable::get(string key) {
+	return table[key];
+}
+
 struct comp
 {
 	bool operator()(const pair<std::string, Simbol*>& l, const pair<std::string, Simbol*>& r) const

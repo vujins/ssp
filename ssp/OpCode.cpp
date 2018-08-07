@@ -1,5 +1,6 @@
 #include "OpCode.h"
 #include <algorithm>
+#include <iostream> //TODO obrisi
 
 regex OpCode::regex_directive("^\\.char|^\\.word|^\\.long");
 regex OpCode::regex_char("^\\.char");
@@ -10,11 +11,16 @@ regex OpCode::regex_align("^\\.align");
 regex OpCode::regex_global("^\\.global");
 
 regex OpCode::regex_comma(",");
-regex OpCode::regex_register("(r[0-7])$");
 regex OpCode::regex_registers("(r[0-7],r[0-7])$");
 
 regex OpCode::regex_operation("^eq[a-z]{2,4}|^ne[a-z]{2,4}|^gt[a-z]{2,4}|^al[a-z]{2,4}");
 regex OpCode::regex_no_operands("(eq[a-z]{2,4})$|(ne[a-z]{2,4})$|(gt[a-z]{2,4})$|(al[a-z]{2,4})$");
+
+//adresiranja
+regex OpCode::regex_register("(r[0-7])$");
+regex OpCode::regex_mem_dir("^(\\*[0-7]+)");
+regex OpCode::regex_immediate("^[0-7]+");
+regex OpCode::regex_reg_ind("^r([0-7])\\[([0-9]+)\\]");
 
 OpCode::OpCode(string name_, string opcode_) :
 	name(name_), opcode(opcode_) {}
@@ -134,12 +140,32 @@ string OpCodeTable::get_instruction_code(string line) {
 //11 reg indirektno sa pomerajem
 string OpCodeTable::get_operand_code(string operand, string &result) {
 	stringstream code;
+	smatch smatch;
 
-	if (regex_search(operand, OpCode::regex_register)) {
-		int reg = stoi(operand.substr(1));
-		code << "01" << OpCode::dec_to_bin(reg);
-		return code.str();
+	if (regex_match(operand, OpCode::regex_register)) {
+		//registarsko direktno: r[0-7]
+		cout << "registarsko: " << operand << endl;
+		code << "01" << OpCode::dec_to_bin(stoi(operand.substr(1)), 3);
 	}
+	else if (regex_match(operand, OpCode::regex_immediate)) {
+		//neposredno: 20
+		cout << "neposredno: " << operand << endl;
+		result = OpCode::dec_to_bin(stoi(operand), 16);
+		code << "00000";
+	}
+	else if (regex_match(operand, OpCode::regex_mem_dir)) {
+		//mem dir: *20
+		cout << "mem dir: " << operand << endl;
+		result = OpCode::dec_to_bin(stoi(operand.substr(1)), 16);
+		code << "10000";
+	}
+	else if (regex_match(operand, smatch, OpCode::regex_reg_ind)) {
+		//reg ind: r6[30]
+		cout << "reg ind: " << operand << endl;
+		code << "11" << OpCode::dec_to_bin(stoi(smatch[1].str()), 3);
+		result = OpCode::dec_to_bin(stoi(smatch[2].str()), 16);
+	}
+
 
 	return code.str();
 }
@@ -201,33 +227,6 @@ string OpCode::get_align_code(string line, int lc) {
 	return code;
 }
 
-string OpCode::get_directive_code(string line) {
-	stringstream code;
-	size_t multiplier;
-	if (regex_search(line, regex_char)) multiplier = 1;
-	if (regex_search(line, regex_word)) multiplier = 2;
-	if (regex_search(line, regex_long)) multiplier = 4;
-	
-	regex regex("[0-9]+");
-	smatch result;
-	while (regex_search(line, result, regex)) {
-		string hex = decimal_to_hex(stoi(result[0]));
-
-		if (hex.size() > 2 * multiplier) return ""; //hex vrednost veca od dozvoljene
-
-		for (size_t i = 0; i < multiplier; i++) {
-			if (i*multiplier + 1 < hex.size()) code << hex[hex.size() - i];
-			else code << "0";
-			if (i*multiplier < hex.size()) code << hex[hex.size() - i - 1];
-			else code << "0";
-		}
-		line = result.suffix().str();
-	}
-	return code.str();
-}
-
-
-
 string OpCode::decimal_to_hex(int n) {
 	string hexbr;
 	int rem;
@@ -249,20 +248,20 @@ string OpCode::decimal_to_hex(int n) {
 	return hexbr;
 }
 
-string OpCode::dec_to_bin(int n) {
+string OpCode::dec_to_bin(int n, size_t bits) {
 	string result;
 	while (n != 0) {
 		result = (n % 2 == 0 ? "0" : "1") + result;
 		n /= 2;
 	}
 
-	while (result.length() < 3) {
+	while (result.length() < bits) {
 		result = "0" + result;
 	}
 	return result;
 }
 
-OpCodeTable::OpCodeTable(): regex_alfanum("[a-z|A-Z|0-9]+") {
+OpCodeTable::OpCodeTable() : regex_alfanum("[a-z|A-Z|0-9|\\*|\\[|\\]]+") {
 	//-----------------eq-------------------
 	table["eqadd"] = new OpCode("eqadd", "000000");
 	table["eqsub"] = new OpCode("eqsub", "000001");
