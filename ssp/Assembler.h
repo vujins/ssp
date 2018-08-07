@@ -21,7 +21,7 @@ public:
 	void output();
 
 private:
-	void increase_location_counter(string line, int &location_counter, Section *current_section);
+	bool increase_location_counter(string line, int &location_counter, Section *current_section);
 
 	int start_address;
 	OpCodeTable table_opcode;

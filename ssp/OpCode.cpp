@@ -7,6 +7,7 @@ regex OpCode::regex_word("^\\.word");
 regex OpCode::regex_long("^\\.long");
 regex OpCode::regex_skip("^\\.skip");
 regex OpCode::regex_align("^\\.align");
+regex OpCode::regex_global("^\\.global");
 
 regex OpCode::regex_comma(",");
 regex OpCode::regex_register("(r[0-7])$");
@@ -14,8 +15,6 @@ regex OpCode::regex_registers("(r[0-7],r[0-7])$");
 
 regex OpCode::regex_operation("^eq[a-z]{2,4}|^ne[a-z]{2,4}|^gt[a-z]{2,4}|^al[a-z]{2,4}");
 regex OpCode::regex_no_operands("(eq[a-z]{2,4})$|(ne[a-z]{2,4})$|(gt[a-z]{2,4})$|(al[a-z]{2,4})$");
-
-regex OpCode::regex_global("^\\.global");
 
 OpCode::OpCode(string name_, string opcode_) :
 	name(name_), opcode(opcode_) {}
@@ -40,10 +39,12 @@ int OpCode::length_of_directive(string line, int lc) {
 	if (regex_search(line, regex_long)) return 4 + 4 * count;
 	if (regex_search(line, regex_skip)) {
 		int position = line.rfind(" ");
+		if (position == -1) return -1;
 		return stoi(line.substr(position));
 	}
 	if (regex_search(line, regex_align)) {
 		int position = line.rfind(" ");
+		if (position == -1) return -1;
 		int align = stoi(line.substr(position));
 		return (align - lc % align) % align;
 	}
@@ -79,6 +80,70 @@ int OpCode::length_of_operation(string line) {
 	}
 }
 
+string OpCodeTable::get_instruction_code(string line) {
+	stringstream code;
+	smatch result;
+
+	string first_operand;
+	string second_operand;
+
+	if (regex_search(line, result, regex_alfanum)) {
+		//ako je pogresno napisana instrukcija vraca gresku
+		if (!table[result[0]]) return string();
+		code << table[result[0]]->get_opcode();
+
+		//pseudo instrukcija ret
+		if (result[0].str().substr(2).compare("ret") == 0) {
+			code << "0111100000";
+			return code.str();
+		}
+		//TODO dodaj pseudo instrukciju jmp
+
+		line = result.suffix().str();
+	}
+	
+	//prvi operand
+	if (regex_search(line, result, regex_alfanum)) {
+		code << get_operand_code(result[0].str(), first_operand);
+		line = result.suffix().str();
+	}
+	else {
+		code << "00000";
+	}
+
+	//drugi operand
+	if (regex_search(line, result, regex_alfanum)) {
+		code << get_operand_code(result[0].str(), second_operand);
+		line = result.suffix().str();
+	}
+	else {
+		code << "00000";
+	}
+
+	//ako oba operanda zahtevaju dodatna 2 bajta
+	if (!first_operand.empty() && !second_operand.empty()) return string();
+	if (!first_operand.empty()) code << first_operand;
+	if (!second_operand.empty()) code << second_operand;
+
+	return code.str();
+}
+
+//00 neposredno ili PSW
+//01 za registarsko direktno
+//10 memorijsko
+//11 reg indirektno sa pomerajem
+string OpCodeTable::get_operand_code(string operand, string &result) {
+	stringstream code;
+
+	if (regex_search(operand, OpCode::regex_register)) {
+		int reg = stoi(operand.substr(1));
+		code << "01" << OpCode::dec_to_bin(reg);
+		return code.str();
+	}
+
+	return code.str();
+}
+
 bool OpCode::is_global(string line) {
 	if (regex_search(line, regex_global)) return true;
 
@@ -110,10 +175,11 @@ bool OpCode::is_instruction(string line) {
 }
 
 string OpCode::get_skip_code(string line) {
-	size_t position = line.find(" ");
+	string code;
+	int position = line.find(" ");
+	if (position == -1) return code;
 	line = line.substr(position);
 	int skip = stoi(line);
-	string code;
 	for (int i = 0; i < skip; i++) {
 		code.append("00");
 	}
@@ -122,12 +188,13 @@ string OpCode::get_skip_code(string line) {
 }
 
 string OpCode::get_align_code(string line, int lc) {
-	size_t position = line.find(" ");
+	string code;
+	int position = line.find(" ");
+	if (position == -1) return code;
 	line = line.substr(position);
 	int align = stoi(line);
 	int fill = (align - lc % align) % align;
 
-	string code;
 	for (int i = 0; i < fill; i++)
 		code.append("00");
 
@@ -136,7 +203,7 @@ string OpCode::get_align_code(string line, int lc) {
 
 string OpCode::get_directive_code(string line) {
 	stringstream code;
-	int multiplier;
+	size_t multiplier;
 	if (regex_search(line, regex_char)) multiplier = 1;
 	if (regex_search(line, regex_word)) multiplier = 2;
 	if (regex_search(line, regex_long)) multiplier = 4;
@@ -148,7 +215,7 @@ string OpCode::get_directive_code(string line) {
 
 		if (hex.size() > 2 * multiplier) return ""; //hex vrednost veca od dozvoljene
 
-		for (int i = 0; i < multiplier; i++) {
+		for (size_t i = 0; i < multiplier; i++) {
 			if (i*multiplier + 1 < hex.size()) code << hex[hex.size() - i];
 			else code << "0";
 			if (i*multiplier < hex.size()) code << hex[hex.size() - i - 1];
@@ -159,12 +226,14 @@ string OpCode::get_directive_code(string line) {
 	return code.str();
 }
 
-string OpCode::decimal_to_hex(int br) {
+
+
+string OpCode::decimal_to_hex(int n) {
 	string hexbr;
 	int rem;
-	if (br == 0) return "0";
-	while (br > 0) {
-		rem = br % 16;
+	if (n == 0) return "0";
+	while (n > 0) {
+		rem = n % 16;
 		switch (rem)
 		{
 		case 10: hexbr = 'A' + hexbr; break;
@@ -175,12 +244,25 @@ string OpCode::decimal_to_hex(int br) {
 		case 15: hexbr = "F" + hexbr; break;
 		default: hexbr = to_string(rem) + hexbr;
 		}
-		br /= 16;
+		n /= 16;
 	}
 	return hexbr;
 }
 
-OpCodeTable::OpCodeTable() {
+string OpCode::dec_to_bin(int n) {
+	string result;
+	while (n != 0) {
+		result = (n % 2 == 0 ? "0" : "1") + result;
+		n /= 2;
+	}
+
+	while (result.length() < 3) {
+		result = "0" + result;
+	}
+	return result;
+}
+
+OpCodeTable::OpCodeTable(): regex_alfanum("[a-z|A-Z|0-9]+") {
 	//-----------------eq-------------------
 	table["eqadd"] = new OpCode("eqadd", "000000");
 	table["eqsub"] = new OpCode("eqsub", "000001");
@@ -198,6 +280,8 @@ OpCodeTable::OpCodeTable() {
 	table["eqmov"] = new OpCode("eqmov", "001101");
 	table["eqshl"] = new OpCode("eqshl", "001110");
 	table["eqshr"] = new OpCode("eqshr", "001111");
+	//pseudo
+	table["eqret"] = new OpCode("eqret", "001010");
 
 	//-----------------ne-------------------
 	table["neadd"] = new OpCode("neadd", "010000");
@@ -216,6 +300,8 @@ OpCodeTable::OpCodeTable() {
 	table["nemov"] = new OpCode("nemov", "011101");
 	table["neshl"] = new OpCode("neshl", "011110");
 	table["neshr"] = new OpCode("neshr", "011111");
+	//pseudo
+	table["neret"] = new OpCode("neret", "011010");
 
 	//-----------------gt-------------------
 	table["gtadd"] = new OpCode("gtadd", "100000");
@@ -234,6 +320,8 @@ OpCodeTable::OpCodeTable() {
 	table["gtmov"] = new OpCode("gtmov", "101101");
 	table["gtshl"] = new OpCode("gtshl", "101110");
 	table["gtshr"] = new OpCode("gtshr", "101111");
+	//pseudo
+	table["gtret"] = new OpCode("gtret", "101010");
 
 	//-----------------al-------------------
 	table["aladd"] = new OpCode("aladd", "110000");
@@ -252,6 +340,8 @@ OpCodeTable::OpCodeTable() {
 	table["almov"] = new OpCode("almov", "111101");
 	table["alshl"] = new OpCode("alshl", "111110");
 	table["alshr"] = new OpCode("alshr", "111111");
+	//pseudo
+	table["alret"] = new OpCode("alret", "111010");
 }
 
 OpCodeTable::~OpCodeTable() {

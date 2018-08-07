@@ -29,17 +29,18 @@ public:
 	static string get_align_code(string line, int lc);
 	static string get_directive_code(string line);
 
+	static string decimal_to_hex(int br);
+	static string dec_to_bin(int n);
+
 private:
+	friend class OpCodeTable;
+
 	const string name;
 	const string opcode;
 
-	static regex regex_char, regex_word, regex_long, regex_skip, regex_align, regex_directive;
+	static regex regex_char, regex_word, regex_long, regex_skip, regex_align, regex_directive, regex_global;
 	static regex regex_comma, regex_registers, regex_register;
 	static regex regex_operation, regex_no_operands;
-
-	static regex regex_global;
-
-	static string decimal_to_hex(int br);
 };
 
 class OpCodeTable {
@@ -47,9 +48,14 @@ public:
 	OpCodeTable();
 	~OpCodeTable();
 
+	string get_instruction_code(string line);
+
 private:
+	string get_operand_code(string operand, string &result);
+
 	unordered_map<string, OpCode*> table;
 
+	regex regex_alfanum;
 };
 
 #endif

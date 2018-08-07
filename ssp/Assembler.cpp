@@ -88,10 +88,12 @@ void Assembler::second_pass() {
 		}
 		if (OpCode::is_skip(line)) {
 			string code = OpCode::get_skip_code(line);
+			if (code.empty()) throw invalid_argument("Skip directive missing an argument!");
 			current_section->append_code(code);
 		}
 		if (OpCode::is_align(line)) {
 			string code = OpCode::get_align_code(line, current_section->get_location_counter());
+			if (code.empty()) throw invalid_argument("Align directive missing an argument!");
 			current_section->append_code(code);
 		}
 		if (OpCode::is_directive(line)) {
@@ -100,10 +102,15 @@ void Assembler::second_pass() {
 			current_section->append_code(code);
 		}
 		if (OpCode::is_instruction(line)) {
-			
+			string bincode = table_opcode.get_instruction_code(line);
+			if (bincode.empty()) throw invalid_argument("Instruction not valid!");
+			stringstream code; 
+			code << hex << stoll(bincode, nullptr, 2);
+			current_section->append_code(code.str());
 		}
 
-		increase_location_counter(line, location_counter, current_section);
+		if (!increase_location_counter(line, location_counter, current_section))
+			throw invalid_argument("Skip or align directives missing an argument!");
 	}
 }
 
@@ -127,21 +134,24 @@ void Assembler::output() {
 	output_filestream.close();
 }
 
-void Assembler::increase_location_counter(string line, int & location_counter, Section * current_section) {
+bool Assembler::increase_location_counter(string line, int & location_counter, Section * current_section) {
 	//ako je jedna od direktiva .char .word .long .align .skip
 	//lc se prenosi u funkciju zbog izracunavanja align
 	int increment = OpCode::length_of_directive(line, current_section->get_location_counter());
+	if (increment == -1) return false;
 	if (increment) {
 		location_counter += increment;
 		current_section->increment_lc(increment);
-		return;
+		return true;
 	}
 
 	increment = OpCode::length_of_operation(line);
+	if (increment == -1) return false;
 	if (increment) {
 		location_counter += increment;
 		current_section->increment_lc(increment);
-		return;
+		return true;
 	}
 
+	return true;
 }
