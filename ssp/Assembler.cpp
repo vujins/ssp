@@ -1,9 +1,9 @@
 #include "Assembler.h"
 
-#include <iostream> //TODO obrisi ovo
+#include <iostream> //TODO obrisi
 
 Assembler::Assembler(const char *file, int start_address_) :
-	start_address(start_address_), table_section(start_address_), end("^\\.end") {
+	start_address(start_address_), table_section(start_address_), end("^\\.end"), comment("^#.*") {
 
 	if (start_address == 0)
 		throw invalid_argument("Start address is invalid!");
@@ -26,12 +26,15 @@ void Assembler::first_pass() {
 		string line;
 		getline(input_filestream, line);
 
+		//prazan red
 		if (line.empty()) continue;
 		if (regex_search(line, end)) {
 			if (current_section)
 				table_section.put(current_section);
 			break;
 		}
+		//komentar sa #
+		if (is_comment(line)) continue;
 		//tabela sekcija
 		if (Section::is_section(line)) {
 			if (current_section)
@@ -73,6 +76,7 @@ void Assembler::second_pass() {
 
 		if (line.empty()) continue;
 		if (regex_search(line, end)) break;
+		if (is_comment(line)) continue;
 		if (Section::is_section(line)) {
 			current_section = table_section.get(line);
 			if (!current_section) throw invalid_argument("Section name invalid!");
@@ -104,9 +108,7 @@ void Assembler::second_pass() {
 		if (OpCode::is_instruction(line)) {
 			string bincode = get_instruction_code(line);
 			if (bincode.empty()) throw invalid_argument("Instruction not valid!");
-			stringstream code;
-			code << hex << stoll(bincode, nullptr, 2);
-			current_section->append_code(code.str());
+			current_section->append_code(bin_to_hex(bincode));
 		}
 
 		if (!increase_location_counter(line, location_counter, current_section))
@@ -195,6 +197,21 @@ string Assembler::get_directive_code(string line) {
 }
 
 
+bool Assembler::is_comment(string line) {
+	if (regex_match(line, comment)) return true;
+	
+	return false;
+}
+
+string Assembler::bin_to_hex(string bin) {
+	stringstream code;
+	for (size_t i = 0; (bin.substr(i * 4, 4)).compare("0000") == 0; i++)
+		code << "0";
+
+	code << hex << stoll(bin, nullptr, 2);
+	return code.str();
+}
+
 string Assembler::get_instruction_code(string line) {
 	stringstream code;
 	regex instruction("((?:eq|ne|gt|al)[a-z]{2,4}) ?([^,]*),? ?([^,]*)");
@@ -253,7 +270,7 @@ string Assembler::get_instruction_code(string line) {
 //11 reg indirektno sa pomerajem
 string Assembler::get_operand_code(string operand, string &result) {
 	stringstream code;
-	smatch smatch;
+	smatch sm;
 
 	if (regex_match(operand, OpCode::regex_register)) {
 		//registarsko direktno: r[0-7]
@@ -272,19 +289,44 @@ string Assembler::get_operand_code(string operand, string &result) {
 		result = OpCode::dec_to_bin(stoi(operand.substr(1)), 16);
 		code << "10000";
 	}
-	else if (regex_match(operand, smatch, OpCode::regex_reg_ind)) {
-		//reg ind: r6[30]
+	else if (regex_match(operand, sm, OpCode::regex_reg_ind)) {
+		//reg ind: r6[30] ili r6[labela]
 		cout << "reg ind: " << operand << endl;
-		code << "11" << OpCode::dec_to_bin(stoi(smatch[1].str()), 3);
-		if (regex_match(smatch[2].str(), regex("[0-9]+"))) {
-			result = OpCode::dec_to_bin(stoi(smatch[2].str()), 16);
+		code << "11" << OpCode::dec_to_bin(stoi(sm[1].str()), 3);
+		if (regex_match(sm[2].str(), regex("[0-9]+"))) {
+			//neposredna vrednost
+			result = OpCode::dec_to_bin(stoi(sm[2].str()), 16);
 		}
 		else {
-			int value = table_simbol.get(smatch[2])->get_value();
+			//labela
+			int value = table_simbol.get(sm[2].str())->get_value();
 			result = OpCode::dec_to_bin(value, 16);
 		}
 	}
-
+	else if (regex_match(operand, sm, OpCode::regex_pc_rel)) {
+		//pc relativno: $labela
+		cout << "pc rel: " << operand << endl;
+		code << "11111";
+		int value = table_simbol.get((sm[1].str()))->get_value();
+		result = OpCode::dec_to_bin(value, 16);
+	}
+	else if (regex_match(operand, sm, OpCode::regex_simbol_value)) {
+		//vrednost simbola kao neposredna vrednost: &labela
+		cout << "vrednost simbola: " << operand << endl;
+		code << "00000";
+		int value = table_simbol.get((sm[1].str()))->get_value();
+		result = OpCode::dec_to_bin(value, 16);
+	}
+	else if (table_simbol.get(operand)) {
+		//memorisko direktno (samo labela): labela
+		cout << "mem dir: " << operand << endl;
+		code << "10000";
+		int value = table_simbol.get(operand)->get_value();
+		result = OpCode::dec_to_bin(value, 16);
+	}
+	else {
+		table_simbol.erase(operand);
+	}
 
 	return code.str();
 }

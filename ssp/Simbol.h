@@ -42,6 +42,7 @@ public:
 
 	bool put(string key, Simbol* simbol);
 	Simbol* get(string key);
+	void erase(string key);
 	void write(ofstream &filestream);
 
 	void add_global_simbols(string line);

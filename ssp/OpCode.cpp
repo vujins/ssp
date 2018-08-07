@@ -1,6 +1,5 @@
 #include "OpCode.h"
 #include <algorithm>
-#include <iostream> //TODO obrisi
 
 regex OpCode::regex_directive("^\\.char|^\\.word|^\\.long");
 regex OpCode::regex_char("^\\.char");
@@ -18,9 +17,11 @@ regex OpCode::regex_no_operands("(eq[a-z]{2,4})$|(ne[a-z]{2,4})$|(gt[a-z]{2,4})$
 
 //adresiranja
 regex OpCode::regex_register("(r[0-7])$");
-regex OpCode::regex_mem_dir("^(\\*[0-7]+)");
-regex OpCode::regex_immediate("^[0-7]+");
+regex OpCode::regex_mem_dir("^(\\*[0-9]+)");
+regex OpCode::regex_immediate("^[0-9]+");
 regex OpCode::regex_reg_ind("^r([0-7])\\[([0-9|a-z|A-Z]+)\\]");
+regex OpCode::regex_pc_rel("^\\$([a-z|A-Z|0-9]+)");
+regex OpCode::regex_simbol_value("^&([a-z|A-Z|0-9]+)");
 
 OpCode::OpCode(string name_, string opcode_) :
 	name(name_), opcode(opcode_) {}

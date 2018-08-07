@@ -44,9 +44,15 @@ void Section::write_rel_table(ofstream & filestream) {
 
 void Section::write_code(ofstream & filestream) {
 	filestream << "#" << name << " code" << endl;
-	for (unsigned i = 0; i < code.size(); i++) {
-		//if (i % 4) filestream << " "; //ne radi
-		filestream << code[i];
+	for (size_t i = 0, k = 0; i < code.size(); i++) {
+		//filestream << code[i];
+		for (size_t j = 0; j < code[i].size(); j++) {
+			if (!(k % 4) && (k != 0)) {
+				filestream << " ";
+			}
+			filestream << code[i][j];
+			k++;
+		}
 	}
 	filestream << endl;
 }

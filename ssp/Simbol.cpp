@@ -74,10 +74,15 @@ Simbol * SimbolTable::get(string key) {
 	return table[key];
 }
 
+void SimbolTable::erase(string key) {
+	table.erase(key);
+}
+
 struct comp
 {
 	bool operator()(const pair<std::string, Simbol*>& l, const pair<std::string, Simbol*>& r) const
 	{
+		if (!l.second || !r.second) return false;
 		if (l.second != r.second)
 			return l.second->get_index() < r.second->get_index();
 

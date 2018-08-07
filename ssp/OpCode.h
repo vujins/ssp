@@ -43,7 +43,7 @@ private:
 	static regex regex_comma, regex_registers;
 	static regex regex_operation, regex_no_operands;
 	//adresiranja
-	static regex regex_register, regex_immediate, regex_mem_dir, regex_reg_ind;
+	static regex regex_register, regex_immediate, regex_mem_dir, regex_reg_ind, regex_pc_rel, regex_simbol_value;
 };
 
 class OpCodeTable {

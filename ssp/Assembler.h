@@ -21,9 +21,11 @@ public:
 	void output();
 
 private:
+	bool is_comment(string line);
+
+	string bin_to_hex(string bin);
 	string get_instruction_code(string line);
 	string get_operand_code(string operand, string &result);
-
 	string get_directive_code(string line);
 	bool increase_location_counter(string line, int &location_counter, Section *current_section);
 
@@ -35,7 +37,7 @@ private:
 	ifstream input_filestream;
 	ofstream output_filestream;
 
-	regex end;
+	regex end, comment;
 };
 
 #endif
