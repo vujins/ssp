@@ -23,6 +23,7 @@ public:
 private:
 	bool is_comment(string line);
 
+	string little_endian(string hex, int multiplier);
 	string bin_to_hex(string bin);
 	string get_instruction_code(string line);
 	string get_operand_code(string operand, string &result);

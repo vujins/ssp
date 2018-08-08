@@ -50,11 +50,11 @@ void Assembler::first_pass() {
 				line = Simbol::cut_label_from_line(line); //a: mov r1, r2 -> mov r1, r2
 			}
 			if (current_section == nullptr)
-				throw invalid_argument("Simbol needs to be in a section!");
+				throw invalid_argument("Simbol needs to be in a section! Line: " + line);
 
 			if (!table_simbol.put(name, new Simbol(name, current_section->get_name(),
 				start_address + location_counter, "local")))
-				throw invalid_argument("Two simbols with the same name are not allowed!");
+				throw invalid_argument("Two simbols with the same name are not allowed! Line: " + line);
 		}
 
 		increase_location_counter(line, location_counter, current_section);
@@ -79,7 +79,7 @@ void Assembler::second_pass() {
 		if (is_comment(line)) continue;
 		if (Section::is_section(line)) {
 			current_section = table_section.get(line);
-			if (!current_section) throw invalid_argument("Section name invalid!");
+			if (!current_section) throw invalid_argument("Section name invalid! Line: " + line);
 			continue;
 		}
 		if (Simbol::is_label(line)) {
@@ -92,27 +92,34 @@ void Assembler::second_pass() {
 		}
 		if (OpCode::is_skip(line)) {
 			string code = OpCode::get_skip_code(line);
-			if (code.empty()) throw invalid_argument("Skip directive missing an argument!");
+			if (code.empty()) throw invalid_argument("Skip directive missing an argument! Line: " + line);
 			current_section->append_code(code);
 		}
 		if (OpCode::is_align(line)) {
 			string code = OpCode::get_align_code(line, current_section->get_location_counter());
-			if (code.empty()) throw invalid_argument("Align directive missing an argument!");
+			if (code.empty()) throw invalid_argument("Align directive missing an argument! Line: " + line);
 			current_section->append_code(code);
 		}
 		if (OpCode::is_directive(line)) {
 			string code = get_directive_code(line);
-			if (code.empty()) throw invalid_argument("Direktiva .char .word ili .long ima preveliku vrednost!");
+			if (code.empty()) throw invalid_argument("Direktiva .char .word ili .long ima preveliku vrednost! Line: " + line);
 			current_section->append_code(code);
 		}
 		if (OpCode::is_instruction(line)) {
 			string bincode = get_instruction_code(line);
-			if (bincode.empty()) throw invalid_argument("Instruction not valid!");
-			current_section->append_code(bin_to_hex(bincode));
+			if (bincode.empty()) throw invalid_argument("Instruction not valid! Line: " + line);
+			string code = bin_to_hex(bincode);
+			//ako postoje dodatna 2 bajta pretvaram ih u little endian
+			if (code.size() == 8) {
+				stringstream ss;
+				ss << code.substr(0, 4) << little_endian(code.substr(4), 2);
+				code = ss.str();
+			}
+			current_section->append_code(code);
 		}
 
 		if (!increase_location_counter(line, location_counter, current_section))
-			throw invalid_argument("Skip or align directives missing an argument!");
+			throw invalid_argument("Skip or align directives missing an argument! Line: " + line);
 	}
 }
 
@@ -158,6 +165,19 @@ bool Assembler::increase_location_counter(string line, int & location_counter, S
 	return true;
 }
 
+string Assembler::little_endian(string hex, int multiplier) {
+	stringstream code;
+
+	for (int i = 1; i <= multiplier; i++) {
+		if (((int)hex.size() - 2 * i) >= 0) code << hex[hex.size() - 2 * i];
+		else code << "0";
+		if (((int)hex.size() - 2 * i + 1) >= 0) code << hex[hex.size() - 2 * i + 1];
+		else code << "0";
+	}
+
+	return code.str();
+}
+
 string Assembler::get_directive_code(string line) {
 	stringstream code;
 	size_t multiplier;
@@ -181,16 +201,12 @@ string Assembler::get_directive_code(string line) {
 			if (simbol)
 				hex = OpCode::decimal_to_hex(simbol->get_value());
 			else
-				return string();
+				return "";
 		}
 		if (hex.size() > 2 * multiplier) return string(); //hex vrednost veca od dozvoljene
 
-		for (int i = 1; i <= multiplier; i++) {
-			if (((int)hex.size() - 2 * i) >= 0) code << hex[hex.size() - 2 * i];
-			else code << "0";
-			if (((int)hex.size() - 2 * i + 1) >= 0) code << hex[hex.size() - 2 * i + 1];
-			else code << "0";
-		}
+		code << little_endian(hex, multiplier);
+
 		line = result.suffix().str();
 	}
 	return code.str();
@@ -199,7 +215,7 @@ string Assembler::get_directive_code(string line) {
 
 bool Assembler::is_comment(string line) {
 	if (regex_match(line, comment)) return true;
-	
+
 	return false;
 }
 
@@ -228,16 +244,35 @@ string Assembler::get_instruction_code(string line) {
 	}
 
 	if (!ins.empty()) {
-		//ako je pogresno napisana instrukcija vraca gresku
-		if (!table_opcode.get_opcode(ins)) return "";
-		code << table_opcode.get_opcode(ins)->get_opcode();
-
 		//pseudo instrukcija ret
 		if (regex_match(ins, regex("^(eq|ne|gt|al)ret"))) {
+			code << table_opcode.get_opcode(ins)->get_opcode();
 			code << "0111100000";
 			return code.str();
 		}
-		//TODO dodaj pseudo instrukciju jmp
+		//pseudo instrukciju jmp
+		smatch sm;
+		if (regex_match(ins, sm, regex("^(eq|ne|gt|al)jmp"))) {
+			if (!op2.empty()) return ""; //jmp ima samo jedan operand
+			if (regex_match(op1, OpCode::regex_pc_rel)) {
+				//jmp $lab -> add pc, &lab
+				code << table_opcode.get_opcode(sm[1].str() + "add")->get_opcode();
+				code << "0111100000"; 
+				get_operand_code(op1, first_operand);
+			}
+			else {
+				code << table_opcode.get_opcode(sm[1].str() + "mov")->get_opcode();
+				code << "01111";
+				code << get_operand_code(op1, first_operand);
+			}
+			if (!first_operand.empty())
+				code << first_operand;
+			return code.str();
+		}
+
+		//ako je pogresno napisana instrukcija vraca gresku
+		if (!table_opcode.get_opcode(ins)) return "";
+		code << table_opcode.get_opcode(ins)->get_opcode();
 	}
 
 	//prvi operand
@@ -307,7 +342,11 @@ string Assembler::get_operand_code(string operand, string &result) {
 		//pc relativno: $labela
 		cout << "pc rel: " << operand << endl;
 		code << "11111";
-		int value = table_simbol.get((sm[1].str()))->get_value();
+		int value;
+		if (regex_match(operand.substr(1), OpCode::regex_immediate))
+			value = stoi(operand.substr(1)); //$128
+		else
+			value = table_simbol.get((sm[1].str()))->get_value(); //$a
 		result = OpCode::dec_to_bin(value, 16);
 	}
 	else if (regex_match(operand, sm, OpCode::regex_simbol_value)) {
