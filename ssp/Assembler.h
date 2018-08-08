@@ -20,17 +20,20 @@ public:
 
 	void output();
 
-private:
+protected:
+	void reset();
 	bool is_comment(string line);
+	bool increase_location_counter(string line);
 
-	string little_endian(string hex, int multiplier);
+	string little_endian_from_hex(string hex, int multiplier);
 	string bin_to_hex(string bin);
 	string get_instruction_code(string line);
 	string get_operand_code(string operand, string &result);
 	string get_directive_code(string line);
-	bool increase_location_counter(string line, int &location_counter, Section *current_section);
 
-	int start_address;
+private:
+	int start_address, location_counter;
+	Section *current_section;
 	OpCodeTable table_opcode;
 	SectionTable table_section;
 	SimbolTable table_simbol;

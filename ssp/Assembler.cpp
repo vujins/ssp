@@ -3,7 +3,8 @@
 #include <iostream> //TODO obrisi
 
 Assembler::Assembler(const char *file, int start_address_) :
-	start_address(start_address_), table_section(start_address_), end("^\\.end"), comment("^#.*") {
+	start_address(start_address_), location_counter(0), table_section(start_address_), 
+	end("^\\.end"), comment("^#.*"), current_section(nullptr) {
 
 	if (start_address == 0)
 		throw invalid_argument("Start address is invalid!");
@@ -19,9 +20,6 @@ Assembler::~Assembler() {
 }
 
 void Assembler::first_pass() {
-	int location_counter = 0;
-	Section *current_section = nullptr;
-
 	while (!input_filestream.eof()) {
 		string line;
 		getline(input_filestream, line);
@@ -43,32 +41,32 @@ void Assembler::first_pass() {
 		}
 		//tabela simbola
 		if (Simbol::is_label(line) || Section::is_section(line)) {
-			string name;
-			if (Section::is_section(line)) name = line;
-			else {
-				name = Simbol::get_label_name(line);
-				line = Simbol::cut_label_from_line(line); //a: mov r1, r2 -> mov r1, r2
-			}
 			if (current_section == nullptr)
 				throw invalid_argument("Simbol needs to be in a section! Line: " + line);
 
-			if (!table_simbol.put(name, new Simbol(name, current_section->get_name(),
-				start_address + location_counter, "local")))
+			string name;
+			int value;
+			if (Section::is_section(line)) {
+				value = 0;
+				name = line;
+			}
+			else {
+				value = start_address + location_counter;
+				name = Simbol::get_label_name(line);
+				line = Simbol::cut_label_from_line(line); //a: mov r1, r2 -> mov r1, r2
+			}
+
+			if (!table_simbol.put(name, new Simbol(name, 
+				current_section->get_name(), value, "local")))
 				throw invalid_argument("Two simbols with the same name are not allowed! Line: " + line);
 		}
 
-		increase_location_counter(line, location_counter, current_section);
+		increase_location_counter(line);
 	}
-	for (auto it : table_section.get_table())
-		it.second->reset_location_counter();
-
-	input_filestream.clear();
-	input_filestream.seekg(0, ios::beg);
+	reset(); //restartovanje trenutne sekcije, lc, fajl
 }
 
 void Assembler::second_pass() {
-	int location_counter = 0;
-	Section *current_section = nullptr;
 
 	while (!input_filestream.eof()) {
 		string line;
@@ -112,13 +110,13 @@ void Assembler::second_pass() {
 			//ako postoje dodatna 2 bajta pretvaram ih u little endian
 			if (code.size() == 8) {
 				stringstream ss;
-				ss << code.substr(0, 4) << little_endian(code.substr(4), 2);
+				ss << code.substr(0, 4) << little_endian_from_hex(code.substr(4), 2);
 				code = ss.str();
 			}
 			current_section->append_code(code);
 		}
 
-		if (!increase_location_counter(line, location_counter, current_section))
+		if (!increase_location_counter(line))
 			throw invalid_argument("Skip or align directives missing an argument! Line: " + line);
 	}
 }
@@ -143,7 +141,7 @@ void Assembler::output() {
 	output_filestream.close();
 }
 
-bool Assembler::increase_location_counter(string line, int & location_counter, Section * current_section) {
+bool Assembler::increase_location_counter(string line) {
 	//ako je jedna od direktiva .char .word .long .align .skip
 	//lc se prenosi u funkciju zbog izracunavanja align
 	int increment = OpCode::length_of_directive(line, current_section->get_location_counter());
@@ -165,7 +163,7 @@ bool Assembler::increase_location_counter(string line, int & location_counter, S
 	return true;
 }
 
-string Assembler::little_endian(string hex, int multiplier) {
+string Assembler::little_endian_from_hex(string hex, int multiplier) {
 	stringstream code;
 
 	for (int i = 1; i <= multiplier; i++) {
@@ -205,13 +203,23 @@ string Assembler::get_directive_code(string line) {
 		}
 		if (hex.size() > 2 * multiplier) return string(); //hex vrednost veca od dozvoljene
 
-		code << little_endian(hex, multiplier);
+		code << little_endian_from_hex(hex, multiplier);
 
 		line = result.suffix().str();
 	}
 	return code.str();
 }
 
+
+void Assembler::reset() {
+	current_section = nullptr;
+	location_counter = 0;
+	for (auto it : table_section.get_table())
+		it.second->reset_location_counter();
+
+	input_filestream.clear();
+	input_filestream.seekg(0, ios::beg);
+}
 
 bool Assembler::is_comment(string line) {
 	if (regex_match(line, comment)) return true;
