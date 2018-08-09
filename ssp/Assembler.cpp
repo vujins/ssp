@@ -337,14 +337,12 @@ string Assembler::get_instruction_code(string line) {
 					else {
 						//TODO mozda lc + 4 jer se lc uvecava tek posle
 						value = value - (start_address + location_counter + 4);
-						cout << value << endl;
 						if (simbol->get_section() != current_section->get_name()) {
 							add_reallocation(simbol, 2, "R_386_PC32");
 						}
 					}
 				}
 				first_operand = OpCode::dec_to_bin(value, 16);
-				cout << first_operand << endl;
 			}
 			else {
 				//sve ostalo -> mov pc, lab

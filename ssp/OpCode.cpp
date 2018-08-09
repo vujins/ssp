@@ -167,7 +167,7 @@ string OpCode::decimal_to_hex(int n) {
 
 string OpCode::dec_to_bin(int n, size_t bits) {
 	string result;
-	for (int i = 0; i < 16; i++) {
+	for (int i = 0; i < bits; i++) {
 		result = (char)((n & 1) + '0') + result;
 		n >>= 1;
 	}
