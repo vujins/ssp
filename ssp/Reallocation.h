@@ -7,10 +7,10 @@
 
 using namespace std;
 
-class Realocation {
+class Reallocation {
 public:
-	Realocation(string address_, string type_, int index_);
-	~Realocation();
+	Reallocation(string address_, string type_, int index_);
+	~Reallocation();
 
 	string get_address();
 	string get_type();
@@ -22,16 +22,16 @@ private:
 	int index;
 };
 
-class RealocationTable {
+class ReallocationTable {
 public:
-	RealocationTable();
-	~RealocationTable();
+	ReallocationTable();
+	~ReallocationTable();
 
-	void put(Realocation *rel);
+	void put(Reallocation *rel);
 	void write(ofstream &filestream);
 
 private:
-	vector<Realocation*> table;
+	vector<Reallocation*> table;
 };
 
 #endif

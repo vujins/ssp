@@ -36,7 +36,7 @@
     <ClCompile Include="Assembler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Realocation.cpp">
+    <ClCompile Include="Reallocation.cpp">
       <Filter>Source Files\Tables</Filter>
     </ClCompile>
   </ItemGroup>
@@ -53,7 +53,7 @@
     <ClInclude Include="Assembler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Realocation.h">
+    <ClInclude Include="Reallocation.h">
       <Filter>Header Files\Tables</Filter>
     </ClInclude>
   </ItemGroup>

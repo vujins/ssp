@@ -61,7 +61,8 @@ void Assembler::first_pass() {
 				throw invalid_argument("Two simbols with the same name are not allowed! Line: " + line);
 		}
 
-		increase_location_counter(line);
+		if (!increase_location_counter(line))
+			throw logic_error("Current section null or somethinmg else :o! Line: " + line);
 	}
 	reset(); //restartovanje trenutne sekcije, lc, fajl
 }
@@ -85,6 +86,7 @@ void Assembler::second_pass() {
 			if (line.empty()) continue;
 		}
 		if (OpCode::is_global(line)) {
+			if (current_section) throw invalid_argument(".global directive has to be at the begging of the file! Line: " + line);
 			table_simbol.add_global_simbols(line);
 			continue;
 		}
@@ -100,7 +102,7 @@ void Assembler::second_pass() {
 		}
 		if (OpCode::is_directive(line)) {
 			string code = get_directive_code(line);
-			if (code.empty()) throw invalid_argument("Direktiva .char .word ili .long ima preveliku vrednost! Line: " + line);
+			if (code.empty()) throw invalid_argument("Direktiva .char .word ili .long ima pogresan argument! Line: " + line);
 			current_section->append_code(code);
 		}
 		if (OpCode::is_instruction(line)) {
@@ -144,6 +146,7 @@ void Assembler::output() {
 bool Assembler::increase_location_counter(string line) {
 	//ako je jedna od direktiva .char .word .long .align .skip
 	//lc se prenosi u funkciju zbog izracunavanja align
+	if (!current_section) return true;
 	int increment = OpCode::length_of_directive(line, current_section->get_location_counter());
 	if (increment == -1) return false;
 	if (increment) {
@@ -159,6 +162,22 @@ bool Assembler::increase_location_counter(string line) {
 		current_section->increment_lc(increment);
 		return true;
 	}
+
+	return true;
+}
+
+bool Assembler::add_reallocation(Simbol *simbol, int offset, string type) {
+	//if (simbol->get_section() == current_section->get_name()) return false;
+	int index;
+	if (simbol->get_visibility() == "local") {
+		index = table_simbol.get(simbol->get_section())->get_index();
+	}
+	else {
+		index = simbol->get_index();
+	}
+	int address = start_address + location_counter + offset;
+	current_section->add_realocation(
+		new Reallocation(OpCode::decimal_to_hex(address), type, index));
 
 	return true;
 }
@@ -181,12 +200,13 @@ string Assembler::get_directive_code(string line) {
 	size_t multiplier;
 	smatch directive;
 	if (regex_search(line, directive, OpCode::regex_char)) multiplier = 1;
-	if (regex_search(line, directive, OpCode::regex_word)) multiplier = 2;
-	if (regex_search(line, directive, OpCode::regex_long)) multiplier = 4;
+	else if (regex_search(line, directive, OpCode::regex_word)) multiplier = 2;
+	else if (regex_search(line, directive, OpCode::regex_long)) multiplier = 4;
 	line = directive.suffix().str();
 
 	regex alfanum("[0-9|a-z|A-Z]+");
 	smatch result;
+	int offset = 0;
 	while (regex_search(line, result, alfanum)) {
 		string hex;
 		if (regex_match(result[0].str(), regex("[0-9]+"))) {
@@ -195,17 +215,22 @@ string Assembler::get_directive_code(string line) {
 		}
 		else {
 			//labela
-			Simbol *simbol = table_simbol.get(result[0].str());
-			if (simbol)
-				hex = OpCode::decimal_to_hex(simbol->get_value());
-			else
+			string simbol_name = result[0].str();
+			Simbol *simbol; 
+			if (!(simbol = table_simbol.get(simbol_name))) {
+				table_simbol.erase(simbol_name);
 				return "";
+			}
+			hex = OpCode::decimal_to_hex(simbol->get_value());
+			//dodaj u tabelu realokacije
+			add_reallocation(simbol, offset, "R_386_32");
 		}
-		if (hex.size() > 2 * multiplier) return string(); //hex vrednost veca od dozvoljene
+		if (hex.size() > 2 * multiplier) return ""; //hex vrednost veca od dozvoljene
 
 		code << little_endian_from_hex(hex, multiplier);
 
 		line = result.suffix().str();
+		offset += multiplier;
 	}
 	return code.str();
 }
@@ -225,6 +250,33 @@ bool Assembler::is_comment(string line) {
 	if (regex_match(line, comment)) return true;
 
 	return false;
+}
+
+string Assembler::is_simbol(string operand, string &reallocation_type) {
+	regex simbol("([^a-z|A-Z|0-9])?([a-z|A-Z|0-9]+)");
+	smatch sm;
+	if (regex_match(operand, sm, simbol)) {
+		if (table_simbol.get(sm[2].str())) {
+			if (sm[1].str() == "$") reallocation_type = "R_386_PC32";
+			else reallocation_type = "R_386_32";
+			return sm[2].str();
+		}
+		else {
+			table_simbol.erase(sm[2].str());
+		}
+	}
+	regex simbol_reg_rel("r[0-7]\\[([a-z|A-Z|0-9]+)\\]");
+	if (regex_match(operand, sm, simbol_reg_rel)) {
+		if (table_simbol.get(sm[1].str())) {
+			reallocation_type = "R_386_32";
+			return sm[1].str();
+		}
+		else {
+			table_simbol.erase(sm[1].str());
+		}
+	}
+
+	return "";
 }
 
 string Assembler::bin_to_hex(string bin) {
@@ -264,11 +316,38 @@ string Assembler::get_instruction_code(string line) {
 			if (!op2.empty()) return ""; //jmp ima samo jedan operand
 			if (regex_match(op1, OpCode::regex_pc_rel)) {
 				//jmp $lab -> add pc, &lab
+				//TODO promeni da bude stvarno relativno
+				//first_operand = lab - pc ako je lab lokalan za tu sekciju
 				code << table_opcode.get_opcode(sm[1].str() + "add")->get_opcode();
 				code << "0111100000"; 
-				get_operand_code(op1, first_operand);
+				//get_operand_code(op1, first_operand);
+
+				int value;
+				if (regex_match(op1.substr(1), OpCode::regex_immediate)) {
+					//neposredno
+					value = stoi(op1.substr(1)); //$128
+				}
+				else {
+					//simbol
+					Simbol *simbol = table_simbol.get(op1.substr(1)); //$label
+					value = simbol->get_value();
+					if (value == 0) {
+						add_reallocation(simbol, 2, "R_386_PC32");
+					}
+					else {
+						//TODO mozda lc + 4 jer se lc uvecava tek posle
+						value = value - (start_address + location_counter + 4);
+						cout << value << endl;
+						if (simbol->get_section() != current_section->get_name()) {
+							add_reallocation(simbol, 2, "R_386_PC32");
+						}
+					}
+				}
+				first_operand = OpCode::dec_to_bin(value, 16);
+				cout << first_operand << endl;
 			}
 			else {
+				//sve ostalo -> mov pc, lab
 				code << table_opcode.get_opcode(sm[1].str() + "mov")->get_opcode();
 				code << "01111";
 				code << get_operand_code(op1, first_operand);
@@ -312,29 +391,32 @@ string Assembler::get_instruction_code(string line) {
 //10 memorijsko
 //11 reg indirektno sa pomerajem
 string Assembler::get_operand_code(string operand, string &result) {
+	string reallocation_type;
+	string simbol_name = is_simbol(operand, reallocation_type);
+	if (!simbol_name.empty()) {
+		Simbol *simbol = table_simbol.get(simbol_name);
+		add_reallocation(simbol, 2, reallocation_type);
+	}
+	//--------------------------------------
 	stringstream code;
 	smatch sm;
 
 	if (regex_match(operand, OpCode::regex_register)) {
 		//registarsko direktno: r[0-7]
-		cout << "registarsko: " << operand << endl;
 		code << "01" << OpCode::dec_to_bin(stoi(operand.substr(1)), 3);
 	}
 	else if (regex_match(operand, OpCode::regex_immediate)) {
 		//neposredno: 20
-		cout << "neposredno: " << operand << endl;
 		result = OpCode::dec_to_bin(stoi(operand), 16);
 		code << "00000";
 	}
 	else if (regex_match(operand, OpCode::regex_mem_dir)) {
 		//mem dir: *20
-		cout << "mem dir: " << operand << endl;
 		result = OpCode::dec_to_bin(stoi(operand.substr(1)), 16);
 		code << "10000";
 	}
 	else if (regex_match(operand, sm, OpCode::regex_reg_ind)) {
 		//reg ind: r6[30] ili r6[labela]
-		cout << "reg ind: " << operand << endl;
 		code << "11" << OpCode::dec_to_bin(stoi(sm[1].str()), 3);
 		if (regex_match(sm[2].str(), regex("[0-9]+"))) {
 			//neposredna vrednost
@@ -348,7 +430,6 @@ string Assembler::get_operand_code(string operand, string &result) {
 	}
 	else if (regex_match(operand, sm, OpCode::regex_pc_rel)) {
 		//pc relativno: $labela
-		cout << "pc rel: " << operand << endl;
 		code << "11111";
 		int value;
 		if (regex_match(operand.substr(1), OpCode::regex_immediate))
@@ -359,14 +440,12 @@ string Assembler::get_operand_code(string operand, string &result) {
 	}
 	else if (regex_match(operand, sm, OpCode::regex_simbol_value)) {
 		//vrednost simbola kao neposredna vrednost: &labela
-		cout << "vrednost simbola: " << operand << endl;
 		code << "00000";
 		int value = table_simbol.get((sm[1].str()))->get_value();
 		result = OpCode::dec_to_bin(value, 16);
 	}
 	else if (table_simbol.get(operand)) {
 		//memorisko direktno (samo labela): labela
-		cout << "mem dir: " << operand << endl;
 		code << "10000";
 		int value = table_simbol.get(operand)->get_value();
 		result = OpCode::dec_to_bin(value, 16);

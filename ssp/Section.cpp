@@ -38,8 +38,8 @@ bool Section::is_section(string line) {
 }
 
 void Section::write_rel_table(ofstream & filestream) {
-	filestream << "#Realocation table for " << name << endl;
-	rel_table.write(filestream);
+	filestream << "#Reallocation table for " << name << endl;
+	table_rel.write(filestream);
 }
 
 void Section::write_code(ofstream & filestream) {
@@ -59,6 +59,10 @@ void Section::write_code(ofstream & filestream) {
 
 void Section::append_code(string s) {
 	code.push_back(s);
+}
+
+void Section::add_realocation(Reallocation * rel) {
+	table_rel.put(rel);
 }
 
 void Section::set_start_address(int start_address_) {

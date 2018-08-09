@@ -6,7 +6,7 @@
 #include <map>
 #include <fstream>
 
-#include "Realocation.h"
+#include "Reallocation.h"
 
 using namespace std;
 
@@ -28,6 +28,7 @@ public:
 	void write_code(ofstream &filestream);
 
 	void append_code(string s);
+	void add_realocation(Reallocation *rel);
 protected:
 	void set_start_address(int start_address_);
 	void set_end_address();
@@ -41,7 +42,7 @@ private:
 	int end_address;
 	int length;
 
-	RealocationTable rel_table;
+	ReallocationTable table_rel;
 	vector<string> code;
 };
 

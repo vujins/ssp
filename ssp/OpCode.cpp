@@ -167,13 +167,9 @@ string OpCode::decimal_to_hex(int n) {
 
 string OpCode::dec_to_bin(int n, size_t bits) {
 	string result;
-	while (n != 0) {
-		result = (n % 2 == 0 ? "0" : "1") + result;
-		n /= 2;
-	}
-
-	while (result.length() < bits) {
-		result = "0" + result;
+	for (int i = 0; i < 16; i++) {
+		result = (char)((n & 1) + '0') + result;
+		n >>= 1;
 	}
 	return result;
 }

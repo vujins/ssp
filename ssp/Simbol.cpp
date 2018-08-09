@@ -108,7 +108,7 @@ void SimbolTable::add_global_simbols(string line) {
 	int position = line.find(" ");
 	line = line.substr(position + 1);
 
-	regex reg("[a-z|0-9]+");
+	regex reg("[a-z|A-Z|0-9]+");
 	smatch result;
 	while (regex_search(line, result, reg)) {
 		if (table[result[0]])

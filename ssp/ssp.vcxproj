@@ -149,7 +149,7 @@
   <ItemGroup>
     <ClCompile Include="Assembler.cpp" />
     <ClCompile Include="OpCode.cpp" />
-    <ClCompile Include="Realocation.cpp" />
+    <ClCompile Include="Reallocation.cpp" />
     <ClCompile Include="Section.cpp" />
     <ClCompile Include="Simbol.cpp" />
     <ClCompile Include="ssp.cpp" />
@@ -157,7 +157,7 @@
   <ItemGroup>
     <ClInclude Include="Assembler.h" />
     <ClInclude Include="OpCode.h" />
-    <ClInclude Include="Realocation.h" />
+    <ClInclude Include="Reallocation.h" />
     <ClInclude Include="Section.h" />
     <ClInclude Include="Simbol.h" />
   </ItemGroup>
