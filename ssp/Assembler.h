@@ -9,6 +9,7 @@
 #include "Reallocation.h"
 
 //TODO promeni define kad budes radio javni test
+//C:\\Users\\vana\\Documents\\ssp\\tests\\output.txt
 #define OUTPUT_FILE "C:\\Users\\vana\\Documents\\ssp\\tests\\output.txt"
 
 class Assembler {
@@ -22,17 +23,19 @@ public:
 	void output();
 
 protected:
+	void remove_line_ending(string &line);
 	void reset();
 	bool is_comment(string line);
 	string is_simbol(string operand, string &reallocation_type);
 	bool increase_location_counter(string line);
 	bool add_reallocation(Simbol *simbol, int offset, string type);
 
-	string little_endian_from_hex(string hex, int multiplier);
-	string bin_to_hex(string bin);
 	string get_instruction_code(string line);
 	string get_operand_code(string operand, string &result);
 	string get_directive_code(string line);
+
+	string little_endian_from_hex(string hex, int multiplier);
+	string bin_to_hex(string bin);
 
 private:
 	int start_address, location_counter;

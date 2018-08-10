@@ -148,6 +148,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Assembler.cpp" />
+    <ClCompile Include="Emulator.cpp" />
     <ClCompile Include="OpCode.cpp" />
     <ClCompile Include="Reallocation.cpp" />
     <ClCompile Include="Section.cpp" />
@@ -156,6 +157,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Assembler.h" />
+    <ClInclude Include="Emulator.h" />
     <ClInclude Include="OpCode.h" />
     <ClInclude Include="Reallocation.h" />
     <ClInclude Include="Section.h" />

@@ -23,6 +23,7 @@ void Assembler::first_pass() {
 	while (!input_filestream.eof()) {
 		string line;
 		getline(input_filestream, line);
+		remove_line_ending(line);
 
 		//prazan red
 		if (line.empty()) continue;
@@ -72,6 +73,7 @@ void Assembler::second_pass() {
 	while (!input_filestream.eof()) {
 		string line;
 		getline(input_filestream, line);
+		remove_line_ending(line);
 
 		if (line.empty()) continue;
 		if (regex_search(line, end)) break;
@@ -236,6 +238,13 @@ string Assembler::get_directive_code(string line) {
 }
 
 
+void Assembler::remove_line_ending(string &line) {
+	regex r("\\r");
+	smatch pomx;
+	if (regex_search(line, pomx, r))
+		line = pomx.prefix().str();
+}
+
 void Assembler::reset() {
 	current_section = nullptr;
 	location_counter = 0;
@@ -316,7 +325,7 @@ string Assembler::get_instruction_code(string line) {
 			if (!op2.empty()) return ""; //jmp ima samo jedan operand
 			if (regex_match(op1, OpCode::regex_pc_rel)) {
 				//jmp $lab -> add pc, &lab
-				//TODO promeni da bude stvarno relativno
+				
 				//first_operand = lab - pc ako je lab lokalan za tu sekciju
 				code << table_opcode.get_opcode(sm[1].str() + "add")->get_opcode();
 				code << "0111100000"; 
@@ -335,7 +344,6 @@ string Assembler::get_instruction_code(string line) {
 						add_reallocation(simbol, 2, "R_386_PC32");
 					}
 					else {
-						//TODO mozda lc + 4 jer se lc uvecava tek posle
 						value = value - (start_address + location_counter + 4);
 						if (simbol->get_section() != current_section->get_name()) {
 							add_reallocation(simbol, 2, "R_386_PC32");

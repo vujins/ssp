@@ -73,12 +73,19 @@ void Section::set_end_address() {
 	end_address = start_address + length;
 }
 
+SectionTable::SectionTable() {
+}
+
 SectionTable::SectionTable(int start_address_):
 	start_address(start_address_) {}
 
 SectionTable::~SectionTable() {
 	for (auto it : table)
 		delete it.second;
+}
+
+void SectionTable::set_start_address(int start_address_) {
+	start_address = start_address_;
 }
 
 bool SectionTable::put(Section *section) {

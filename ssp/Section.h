@@ -48,9 +48,11 @@ private:
 
 class SectionTable {
 public:
+	SectionTable();
 	SectionTable(int start_address_);
 	~SectionTable();
 
+	void set_start_address(int start_address_);
 	bool put(Section *section);
 	Section* get(string name);
 	const map<string, Section*> get_table() const;
