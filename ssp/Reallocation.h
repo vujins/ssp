@@ -9,7 +9,7 @@ using namespace std;
 
 class Reallocation {
 public:
-	Reallocation(string address_, string type_, int index_);
+	Reallocation(string address_, string type_, string index_);
 	~Reallocation();
 
 	string get_address();
@@ -19,7 +19,7 @@ public:
 private:
 	string address;
 	string type;
-	int index;
+	string index;
 };
 
 class ReallocationTable {

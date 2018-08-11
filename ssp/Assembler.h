@@ -38,6 +38,7 @@ protected:
 	string bin_to_hex(string bin);
 
 private:
+	string file_name;
 	int start_address, location_counter;
 	Section *current_section;
 	OpCodeTable table_opcode;

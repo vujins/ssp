@@ -157,6 +157,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Assembler.h" />
+    <ClInclude Include="config.h" />
     <ClInclude Include="Emulator.h" />
     <ClInclude Include="OpCode.h" />
     <ClInclude Include="Reallocation.h" />

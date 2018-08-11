@@ -8,6 +8,7 @@ Assembler::Assembler(const char *file, int start_address_) :
 
 	if (start_address == 0)
 		throw invalid_argument("Start address is invalid!");
+	file_name = file;
 	input_filestream.open(file);
 	if (!input_filestream.is_open())
 		throw invalid_argument("File path is invalid!");
@@ -130,6 +131,7 @@ void Assembler::output() {
 	if (!output_filestream.is_open())
 		throw invalid_argument("Output file path does not exist!");
 
+	output_filestream << "#" << file_name << endl;
 	table_section.write(output_filestream);
 	table_simbol.write(output_filestream);
 

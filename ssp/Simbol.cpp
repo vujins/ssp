@@ -22,6 +22,10 @@ int Simbol::get_value() {
 	return value;
 }
 
+void Simbol::set_value(int v) {
+	value = v;
+}
+
 string Simbol::get_visibility() {
 	return visibility;
 }

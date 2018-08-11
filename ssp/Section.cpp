@@ -6,6 +6,9 @@ regex Section::section_regex = regex("^\\.data|^\\.text|^\\.bss|^\\.rodata");
 Section::Section(string name_):
 	name(name_), start_address(0), end_address(0), length(0) {}
 
+Section::Section(string name_, int start, int end, int length_):
+	name(name_), start_address(start), end_address(end), length(length_) {}
+
 string Section::get_name() {
 	return name;
 }
@@ -102,6 +105,13 @@ bool SectionTable::put(Section *section) {
 	return true;
 }
 
+bool SectionTable::add(Section * section) {
+	if (table[section->get_name()]) return false;
+	else table[section->get_name()] = section;
+
+	return true;
+}
+
 Section* SectionTable::get(string name) {
 	return table[name];
 }
@@ -125,8 +135,8 @@ void SectionTable::write(ofstream &filestream) {
 	std::set<std::pair<std::string, Section*>, comp> set(table.begin(), table.end());
 
 	filestream << "#Section table" << endl;
-	filestream << "#name" << "\t\t" << "start_address" << "\t" << "end_address" <<
-		"\t" << "length" << endl;
+	filestream << "#name" << "\t\t" << "start" << "\t\t" << "end" <<
+		"\t\t" << "length" << endl;
 	for (auto const &section : set) {
 		filestream << section.second->get_name() << "\t\t" << 
 			section.second->get_start_address() << "\t\t" <<

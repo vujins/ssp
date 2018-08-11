@@ -13,6 +13,7 @@ using namespace std;
 class Section {
 public:
 	Section(string name_);
+	Section(string name_, int start, int end, int length_);
 
 	string get_name();
 	int get_start_address();
@@ -54,6 +55,7 @@ public:
 
 	void set_start_address(int start_address_);
 	bool put(Section *section);
+	bool add(Section *section);
 	Section* get(string name);
 	const map<string, Section*> get_table() const;
 
