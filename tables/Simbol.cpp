@@ -18,6 +18,10 @@ string Simbol::get_section() {
 	return section;
 }
 
+void Simbol::set_setcion(string s) {
+	section = s;
+}
+
 int Simbol::get_value() {
 	return value;
 }

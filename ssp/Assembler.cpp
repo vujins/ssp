@@ -1,7 +1,5 @@
 #include "Assembler.h"
 
-#include <iostream> //TODO obrisi
-
 Assembler::Assembler(const char *file, int start_address_) :
 	start_address(start_address_), location_counter(0), table_section(start_address_), 
 	end("^\\.end"), comment("^#.*"), current_section(nullptr) {
@@ -173,30 +171,20 @@ bool Assembler::increase_location_counter(string line) {
 bool Assembler::add_reallocation(Simbol *simbol, int offset, string type) {
 	//if (simbol->get_section() == current_section->get_name()) return false;
 	int index;
+	string name;
 	if (simbol->get_visibility() == "local") {
 		index = table_simbol.get(simbol->get_section())->get_index();
+		name = table_simbol.get(simbol->get_section())->get_name();
 	}
 	else {
 		index = simbol->get_index();
+		name = simbol->get_name();
 	}
 	int address = start_address + location_counter + offset;
 	current_section->add_realocation(
-		new Reallocation(OpCode::decimal_to_hex(address), type, index));
+		new Reallocation(decimal_to_hex(address), type, index, name));
 
 	return true;
-}
-
-string Assembler::little_endian_from_hex(string hex, int multiplier) {
-	stringstream code;
-
-	for (int i = 1; i <= multiplier; i++) {
-		if (((int)hex.size() - 2 * i) >= 0) code << hex[hex.size() - 2 * i];
-		else code << "0";
-		if (((int)hex.size() - 2 * i + 1) >= 0) code << hex[hex.size() - 2 * i + 1];
-		else code << "0";
-	}
-
-	return code.str();
 }
 
 string Assembler::get_directive_code(string line) {
@@ -215,7 +203,7 @@ string Assembler::get_directive_code(string line) {
 		string hex;
 		if (regex_match(result[0].str(), regex("[0-9]+"))) {
 			//neposredna vrednost
-			hex = OpCode::decimal_to_hex(stoi(result[0]));
+			hex = decimal_to_hex(stoi(result[0]));
 		}
 		else {
 			//labela
@@ -225,7 +213,7 @@ string Assembler::get_directive_code(string line) {
 				table_simbol.erase(simbol_name);
 				return "";
 			}
-			hex = OpCode::decimal_to_hex(simbol->get_value());
+			hex = decimal_to_hex(simbol->get_value());
 			//dodaj u tabelu realokacije
 			add_reallocation(simbol, offset, "R_386_32");
 		}
@@ -290,15 +278,6 @@ string Assembler::is_simbol(string operand, string &reallocation_type) {
 	return "";
 }
 
-string Assembler::bin_to_hex(string bin) {
-	stringstream code;
-	for (size_t i = 0; (bin.substr(i * 4, 4)).compare("0000") == 0; i++)
-		code << "0";
-
-	code << hex << stoll(bin, nullptr, 2);
-	return code.str();
-}
-
 string Assembler::get_instruction_code(string line) {
 	stringstream code;
 	regex instruction("((?:eq|ne|gt|al)[a-z]{2,4}) ?([^,]*),? ?([^,]*)");
@@ -352,7 +331,7 @@ string Assembler::get_instruction_code(string line) {
 						}
 					}
 				}
-				first_operand = OpCode::dec_to_bin(value, 16);
+				first_operand = dec_to_bin(value, 16);
 			}
 			else {
 				//sve ostalo -> mov pc, lab
@@ -411,29 +390,29 @@ string Assembler::get_operand_code(string operand, string &result) {
 
 	if (regex_match(operand, OpCode::regex_register)) {
 		//registarsko direktno: r[0-7]
-		code << "01" << OpCode::dec_to_bin(stoi(operand.substr(1)), 3);
+		code << "01" << dec_to_bin(stoi(operand.substr(1)), 3);
 	}
 	else if (regex_match(operand, OpCode::regex_immediate)) {
 		//neposredno: 20
-		result = OpCode::dec_to_bin(stoi(operand), 16);
+		result = dec_to_bin(stoi(operand), 16);
 		code << "00000";
 	}
 	else if (regex_match(operand, OpCode::regex_mem_dir)) {
 		//mem dir: *20
-		result = OpCode::dec_to_bin(stoi(operand.substr(1)), 16);
+		result = dec_to_bin(stoi(operand.substr(1)), 16);
 		code << "10000";
 	}
 	else if (regex_match(operand, sm, OpCode::regex_reg_ind)) {
 		//reg ind: r6[30] ili r6[labela]
-		code << "11" << OpCode::dec_to_bin(stoi(sm[1].str()), 3);
+		code << "11" << dec_to_bin(stoi(sm[1].str()), 3);
 		if (regex_match(sm[2].str(), regex("[0-9]+"))) {
 			//neposredna vrednost
-			result = OpCode::dec_to_bin(stoi(sm[2].str()), 16);
+			result = dec_to_bin(stoi(sm[2].str()), 16);
 		}
 		else {
 			//labela
 			int value = table_simbol.get(sm[2].str())->get_value();
-			result = OpCode::dec_to_bin(value, 16);
+			result = dec_to_bin(value, 16);
 		}
 	}
 	else if (regex_match(operand, sm, OpCode::regex_pc_rel)) {
@@ -444,19 +423,19 @@ string Assembler::get_operand_code(string operand, string &result) {
 			value = stoi(operand.substr(1)); //$128
 		else
 			value = table_simbol.get((sm[1].str()))->get_value(); //$a
-		result = OpCode::dec_to_bin(value, 16);
+		result = dec_to_bin(value, 16);
 	}
 	else if (regex_match(operand, sm, OpCode::regex_simbol_value)) {
 		//vrednost simbola kao neposredna vrednost: &labela
 		code << "00000";
 		int value = table_simbol.get((sm[1].str()))->get_value();
-		result = OpCode::dec_to_bin(value, 16);
+		result = dec_to_bin(value, 16);
 	}
 	else if (table_simbol.get(operand)) {
 		//memorisko direktno (samo labela): labela
 		code << "10000";
 		int value = table_simbol.get(operand)->get_value();
-		result = OpCode::dec_to_bin(value, 16);
+		result = dec_to_bin(value, 16);
 	}
 	else {
 		table_simbol.erase(operand);

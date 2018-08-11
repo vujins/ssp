@@ -2,8 +2,8 @@
 
 
 
-Reallocation::Reallocation(string address_, string type_, int index_):
-address(address_), type(type_), index(index_) {}
+Reallocation::Reallocation(string address_, string type_, int index_, string name_):
+address(address_), type(type_), index(index_), name(name_) {}
 
 
 Reallocation::~Reallocation(){
@@ -22,6 +22,10 @@ int Reallocation::get_index() {
 	return index;
 }
 
+string Reallocation::get_name() {
+	return name;
+}
+
 ReallocationTable::ReallocationTable() {}
 
 ReallocationTable::~ReallocationTable() {
@@ -34,10 +38,10 @@ void ReallocationTable::put(Reallocation * rel) {
 }
 
 void ReallocationTable::write(ofstream & filestream) {
-	filestream << "#address" << "\t\t" << "type" << "\t\t" << "index" << endl;
+	filestream << "#address" << "\t\t" << "type" << "\t\t" << "name" << endl;
 	for (Reallocation *rel : table) {
 		filestream << rel->get_address() << "\t\t" << rel->get_type() <<
-			"\t\t" << rel->get_index() << endl;
+			"\t\t" << rel->get_name() << endl;
 	}
 	filestream << endl;
 }

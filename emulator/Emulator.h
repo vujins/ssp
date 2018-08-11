@@ -20,7 +20,7 @@ public:
 	~Emulator();
 
 	void read();
-	void write();
+	void output();
 
 protected:
 	//setters

@@ -48,14 +48,20 @@ void Emulator::read() {
 
 					smatch sm;
 					if (regex_match(line, sm, regex("(\\.?[a-z|A-Z|0-9]+)\t*(\\.?[a-z|A-Z|0-9]+)\t*([0-9]+)\t*(local|global)\t*([0-9]+)"))) {
+						string visibility = sm[4].str();
+						if (visibility == "local") continue;
 						string name = sm[1].str();
 						string section = sm[2].str();
 						int value = stoi(sm[3].str());
-						string visibility = sm[4].str();
 						int index = stoi(sm[5].str());
-						if (table_simbol.get(name)) {
-							if (table_simbol.get(name)->get_value()) continue;
-							else table_simbol.get(name)->set_value(value);
+						Simbol *simbol = table_simbol.get(name);
+						if (simbol) {
+							assert(simbol->get_visibility() == "global");
+							if (simbol->get_value()) continue;
+							else {
+								simbol->set_value(value);
+								simbol->set_setcion(section);
+							}
 						}
 						else {
 							table_simbol.put(name, new Simbol(name, section, value, visibility));
@@ -68,10 +74,11 @@ void Emulator::read() {
 	}
 }
 
-void Emulator::write() {
+void Emulator::output() {
 	ofstream output_filestream;
 	output_filestream.open("C:\\Users\\vana\\Documents\\ssp\\tests\\emulator_output.txt");
 	
+	for (string file : files) output_filestream << "#" << file << endl;
 	for (auto it : table_section) it->write(output_filestream);
 	table_simbol.write(output_filestream);
 	

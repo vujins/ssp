@@ -9,17 +9,19 @@ using namespace std;
 
 class Reallocation {
 public:
-	Reallocation(string address_, string type_, string index_);
+	Reallocation(string address_, string type_, int index_, string name_);
 	~Reallocation();
 
 	string get_address();
 	string get_type();
 	int get_index();
+	string get_name();
 
 private:
 	string address;
 	string type;
-	string index;
+	int index;
+	string name;
 };
 
 class ReallocationTable {

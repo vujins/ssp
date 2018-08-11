@@ -28,10 +28,6 @@ public:
 	static string get_skip_code(string line);
 	static string get_align_code(string line, int lc);
 	//static string get_directive_code(string line);
-
-	static string decimal_to_hex(int br);
-	static string dec_to_bin(int n, size_t bits);
-
 private:
 	friend class OpCodeTable;
 	friend class Assembler;

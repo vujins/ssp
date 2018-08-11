@@ -15,6 +15,7 @@ public:
 
 	string get_name();
 	string get_section();
+	void set_setcion(string s);
 	int get_value();
 	void set_value(int v);
 	string get_visibility();

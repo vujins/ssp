@@ -144,36 +144,6 @@ string OpCode::get_align_code(string line, int lc) {
 	return code;
 }
 
-string OpCode::decimal_to_hex(int n) {
-	string hexbr;
-	int rem;
-	if (n == 0) return "0";
-	while (n > 0) {
-		rem = n % 16;
-		switch (rem)
-		{
-		case 10: hexbr = 'A' + hexbr; break;
-		case 11: hexbr = 'B' + hexbr; break;
-		case 12: hexbr = "C" + hexbr; break;
-		case 13: hexbr = "D" + hexbr; break;
-		case 14: hexbr = "E" + hexbr; break;
-		case 15: hexbr = "F" + hexbr; break;
-		default: hexbr = to_string(rem) + hexbr;
-		}
-		n /= 16;
-	}
-	return hexbr;
-}
-
-string OpCode::dec_to_bin(int n, size_t bits) {
-	string result;
-	for (int i = 0; i < bits; i++) {
-		result = (char)((n & 1) + '0') + result;
-		n >>= 1;
-	}
-	return result;
-}
-
 OpCodeTable::OpCodeTable() : regex_alfanum("[a-z|A-Z|0-9|\\*|\\[|\\]]+") {
 	//-----------------eq-------------------
 	table["eqadd"] = new OpCode("eqadd", "000000");

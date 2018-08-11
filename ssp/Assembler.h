@@ -7,6 +7,7 @@
 #include "Simbol.h"
 #include "OpCode.h"
 #include "Reallocation.h"
+#include "functions.h"
 
 //TODO promeni define kad budes radio javni test
 //C:\\Users\\vana\\Documents\\ssp\\tests\\output.txt
@@ -34,8 +35,7 @@ protected:
 	string get_operand_code(string operand, string &result);
 	string get_directive_code(string line);
 
-	string little_endian_from_hex(string hex, int multiplier);
-	string bin_to_hex(string bin);
+
 
 private:
 	string file_name;
