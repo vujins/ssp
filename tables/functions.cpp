@@ -1,24 +1,18 @@
 #include "functions.h"
 
 string decimal_to_hex(int n) {
-	string hexbr;
-	int rem;
-	if (n == 0) return "0";
-	while (n > 0) {
-		rem = n % 16;
-		switch (rem)
-		{
-		case 10: hexbr = 'A' + hexbr; break;
-		case 11: hexbr = 'B' + hexbr; break;
-		case 12: hexbr = "C" + hexbr; break;
-		case 13: hexbr = "D" + hexbr; break;
-		case 14: hexbr = "E" + hexbr; break;
-		case 15: hexbr = "F" + hexbr; break;
-		default: hexbr = to_string(rem) + hexbr;
-		}
-		n /= 16;
-	}
-	return hexbr;
+	stringstream code;
+	code << uppercase << hex << n;
+
+	return code.str();
+}
+
+int hex_to_decimal(string hex) {
+	int x;
+	std::stringstream ss;
+	ss << std::hex << hex;
+	ss >> x;
+	return x;
 }
 
 string dec_to_bin(int n, size_t bits) {
@@ -35,7 +29,7 @@ string bin_to_hex(string bin) {
 	for (size_t i = 0; (bin.substr(i * 4, 4)).compare("0000") == 0; i++)
 		code << "0";
 
-	code << hex << stoll(bin, nullptr, 2);
+	code << uppercase << hex << stoll(bin, nullptr, 2);
 	return code.str();
 }
 

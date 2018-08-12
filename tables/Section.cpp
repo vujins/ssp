@@ -50,7 +50,7 @@ void Section::write_code(ofstream & filestream) {
 	for (size_t i = 0, k = 0; i < code.size(); i++) {
 		//filestream << code[i];
 		for (size_t j = 0; j < code[i].size(); j++) {
-			if (!(k % 4) && (k != 0)) {
+			if (!(k % 2) && (k != 0)) {
 				filestream << " ";
 			}
 			filestream << code[i][j];

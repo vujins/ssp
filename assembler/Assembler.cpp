@@ -182,7 +182,7 @@ bool Assembler::add_reallocation(Simbol *simbol, int offset, string type) {
 	}
 	int address = start_address + location_counter + offset;
 	current_section->add_realocation(
-		new Reallocation(decimal_to_hex(address), type, index, name));
+		new Reallocation(decimal_to_hex(address), type, index));
 
 	return true;
 }
@@ -305,7 +305,7 @@ string Assembler::get_instruction_code(string line) {
 		if (regex_match(ins, sm, regex("^(eq|ne|gt|al)jmp"))) {
 			if (!op2.empty()) return ""; //jmp ima samo jedan operand
 			if (regex_match(op1, OpCode::regex_pc_rel)) {
-				//jmp $lab -> add pc, &lab
+				//jmp $lab -> add pc, lab
 				
 				//first_operand = lab - pc ako je lab lokalan za tu sekciju
 				code << table_opcode.get_opcode(sm[1].str() + "add")->get_opcode();
@@ -322,10 +322,10 @@ string Assembler::get_instruction_code(string line) {
 					Simbol *simbol = table_simbol.get(op1.substr(1)); //$label
 					value = simbol->get_value();
 					if (value == 0) {
+						value = -2;
 						add_reallocation(simbol, 2, "R_386_PC32");
 					}
 					else {
-						value = value - (start_address + location_counter + 4);
 						if (simbol->get_section() != current_section->get_name()) {
 							add_reallocation(simbol, 2, "R_386_PC32");
 						}

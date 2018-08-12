@@ -82,6 +82,15 @@ Simbol * SimbolTable::get(string key) {
 	return table[key];
 }
 
+Simbol * SimbolTable::get_index(int index) {
+	Simbol *simbol = nullptr;
+	for (auto s : table) 
+		if (s.second->get_index() == index) {
+			simbol = s.second;
+		}
+	return simbol;
+}
+
 void SimbolTable::erase(string key) {
 	table.erase(key);
 }

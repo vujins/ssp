@@ -9,7 +9,7 @@ using namespace std;
 
 class Reallocation {
 public:
-	Reallocation(string address_, string type_, int index_, string name_);
+	Reallocation(string address_, string type_, int index_);
 	~Reallocation();
 
 	string get_address();
@@ -31,6 +31,7 @@ public:
 
 	void put(Reallocation *rel);
 	void write(ofstream &filestream);
+	vector<Reallocation*> get_table();
 
 private:
 	vector<Reallocation*> table;

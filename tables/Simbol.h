@@ -44,6 +44,7 @@ public:
 
 	bool put(string key, Simbol* simbol);
 	Simbol* get(string key);
+	Simbol* get_index(int index);
 	void erase(string key);
 	void write(ofstream &filestream);
 

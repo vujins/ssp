@@ -3,9 +3,6 @@
 
 #include <stdint.h>
 
-using address = uint16_t;
-using data = int8_t;
-
 #define PC 7
 #define SP 6
 //PSW flagovi
