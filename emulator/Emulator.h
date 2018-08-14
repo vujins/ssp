@@ -15,7 +15,7 @@
 
 using namespace std;
 
-#define OUTPUT_FILE "C:\\Users\\vana\\Documents\\ssp\\tests\\reallocation\\emulator.txt"
+#define OUTPUT_FILE "C:\\Users\\vana\\Documents\\ssp\\tests\\ins\\emulator.txt"
 
 class Emulator {
 public:
@@ -51,9 +51,16 @@ protected:
 	bool get_n();
 	bool get_periodic();
 
+	void check_address(uint16_t addr);
 	void write(uint16_t addr, uint8_t data);
 	void write(uint16_t addr, int data, int bytes);
+	//little-endian
 	int read(uint16_t address, int bytes);
+	uint16_t read_ins(uint16_t &address);
+
+	void push(uint8_t data);
+	uint8_t pop();
+
 
 private:
 	vector<string> files;
@@ -62,6 +69,7 @@ private:
 	uint8_t om[OM_SIZE];
 	uint16_t r[8];
 	uint16_t PSW;
+	uint16_t end_address;
 
 	OpCodeTable table_opcode;
 	vector<SectionTable*> table_section;

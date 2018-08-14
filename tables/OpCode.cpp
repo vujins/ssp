@@ -10,7 +10,7 @@ regex OpCode::regex_align("^\\.align");
 regex OpCode::regex_global("^\\.global");
 
 regex OpCode::regex_comma(",");
-regex OpCode::regex_registers("(r[0-7],r[0-7])$");
+regex OpCode::regex_registers("(r[0-7], ?r[0-7])$");
 
 regex OpCode::regex_operation("^eq[a-z]{2,4}|^ne[a-z]{2,4}|^gt[a-z]{2,4}|^al[a-z]{2,4}");
 regex OpCode::regex_no_operands("(eq[a-z]{2,4})$|(ne[a-z]{2,4})$|(gt[a-z]{2,4})$|(al[a-z]{2,4})$");

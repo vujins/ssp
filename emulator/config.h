@@ -20,4 +20,16 @@
 
 #define OM_SIZE 0x10000 //2^16
 
+#define IVT_SIZE 16
+#define IVT_START 0
+#define IVT_END 0xF
+
+#define STACK_SIZE 0x1000 //2^12
+#define STACK_START 0xEF80 //2^16 - 2^12 - 128
+#define STACK_END 0xFF7F //2^16 - 128 - 1
+
+#define IO_START 0xFF80 //2^16 - 128
+#define IO_END 0xFFFF //2^16 - 1
+#define IO_SIZE 128
+
 #endif

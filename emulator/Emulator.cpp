@@ -85,6 +85,9 @@ void Emulator::read() {
 							Simbol *simbol_new = new Simbol(name, section, value, visibility);
 							table_simbol.put(name, simbol_new);
 							index_new = simbol_new->get_index();
+							if (name == ".start") {
+								end_address = table_section[i]->get(section)->get_end_address();
+							}
 						}
 						if (section == "UND") {
 							if (index_new)
@@ -155,12 +158,21 @@ void Emulator::resolve_conflict() {
 }
 
 void Emulator::execute() {
+	r[PC] = table_simbol.get(".start")->get_value();
+	r[SP] = STACK_END + 1;
 
+	do {
+		uint16_t ins = read_ins(r[PC]);
+		uint8_t opcode = ins >> 10;
+		uint8_t op1 = (ins >> 5) & 0x1F;
+		uint8_t op2 = ins & 0x1F;
+	} while (r[PC] != end_address + 1);
 }
 
 void Emulator::output() {
 	ofstream output_filestream;
 	output_filestream.open(OUTPUT_FILE);
+	assert(output_filestream);
 	
 	for (string file : files) output_filestream << "#" << file << endl;
 	for (auto it : table_section) it->write(output_filestream);
@@ -169,11 +181,11 @@ void Emulator::output() {
 	table_reallocation.write(output_filestream);
 
 	output_filestream << "1100: ";
-	for (int i = 1100; i < 1130; i++)
+	for (int i = table_simbol.get(".start")->get_value(); i <= end_address; i++)
 		output_filestream << uppercase << hex << (int)om[i] << " ";
-	output_filestream << endl << "1200: ";
-	for (int i = 1200; i < 1230; i++)
-		output_filestream << uppercase << hex << (int)om[i] << " ";
+	//output_filestream << endl << "1200: ";
+	//for (int i = 1200; i < 1230; i++)
+	//	output_filestream << uppercase << hex << (int)om[i] << " ";
 	
 	output_filestream.close();
 }
@@ -226,9 +238,13 @@ bool Emulator::get_periodic() {
 	return PSW & FLAG_periodic;
 }
 
+void Emulator::check_address(uint16_t addr) {
+	assert(addr >= 16 && addr < STACK_START);
+}
+
 void Emulator::write(uint16_t addr, uint8_t data) {
-	//ovo su rezervisana mesta
-	assert(addr >= 16 && addr < (OM_SIZE - 128));
+	check_address(addr);
+
 	om[addr] = data;
 	if (addr_cout == addr) {
 		if (data == 0x10) cout << '\n';
@@ -246,6 +262,8 @@ void Emulator::write(uint16_t addr, int data, int bytes) {
 }
 
 int Emulator::read(uint16_t address, int bytes) {
+	check_address(address);
+
 	stringstream ss;
 	for (int i = bytes - 1; i >= 0; i--) {
 		ss << hex << (int)om[address + i];
@@ -254,6 +272,26 @@ int Emulator::read(uint16_t address, int bytes) {
 	if (bytes == 1) return (int8_t)hex_to_decimal(ss.str());
 	if (bytes == 2) return (int16_t)hex_to_decimal(ss.str());
 	return hex_to_decimal(ss.str());
+}
+
+uint16_t Emulator::read_ins(uint16_t &address) {
+	check_address(address);
+
+	uint16_t ins = om[address++];
+	ins <<= 8;
+	ins += om[address++];
+
+	return ins;
+}
+
+void Emulator::push(uint8_t data) {
+	assert(r[SP] > STACK_START);
+	om[--r[SP]] = data;
+}
+
+uint8_t Emulator::pop() {
+	assert(r[SP] <= STACK_END);
+	return om[r[SP]++];
 }
 
 void Emulator::sti() {
