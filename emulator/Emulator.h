@@ -15,6 +15,8 @@
 
 using namespace std;
 
+#define OUTPUT_FILE "C:\\Users\\vana\\Documents\\ssp\\tests\\reallocation\\emulator.txt"
+
 class Emulator {
 public:
 	Emulator(int argc, char* argv[]);
@@ -22,6 +24,8 @@ public:
 
 	void read();
 	void resolve_conflict();
+	void execute();
+
 	void output();
 
 protected:

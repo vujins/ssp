@@ -40,15 +40,23 @@ void Assembler::first_pass() {
 			current_section = new Section(line);
 		}
 		//tabela simbola
-		if (Simbol::is_label(line) || Section::is_section(line)) {
+		if (Simbol::is_label(line) || Section::is_section(line)||Simbol::is_start(line)) {
 			if (current_section == nullptr)
 				throw invalid_argument("Simbol needs to be in a section! Line: " + line);
 
 			string name;
 			int value;
+			string visibility = "local";
 			if (Section::is_section(line)) {
 				value = 0;
 				name = line;
+			}
+			else if (Simbol::is_start(line)) {
+				if (current_section->get_name() != ".text")
+					throw invalid_argument(".start simbol needs to be in .text section! Line: " + line);
+				value = value = start_address + location_counter;
+				name = line;
+				visibility = "global";
 			}
 			else {
 				value = start_address + location_counter;
@@ -57,7 +65,7 @@ void Assembler::first_pass() {
 			}
 
 			if (!table_simbol.put(name, new Simbol(name, 
-				current_section->get_name(), value, "local")))
+				current_section->get_name(), value, visibility)))
 				throw invalid_argument("Two simbols with the same name are not allowed! Line: " + line);
 		}
 
@@ -215,7 +223,8 @@ string Assembler::get_directive_code(string line) {
 			}
 			hex = decimal_to_hex(simbol->get_value());
 			//dodaj u tabelu realokacije
-			add_reallocation(simbol, offset, "R_386_32");
+			if (simbol->get_section() == "UND")
+				add_reallocation(simbol, offset, "R_386_32");
 		}
 		if (hex.size() > 2 * multiplier) return ""; //hex vrednost veca od dozvoljene
 
@@ -323,12 +332,9 @@ string Assembler::get_instruction_code(string line) {
 					value = simbol->get_value();
 					if (value == 0) {
 						value = -2;
-						add_reallocation(simbol, 2, "R_386_PC32");
 					}
-					else {
-						if (simbol->get_section() != current_section->get_name()) {
-							add_reallocation(simbol, 2, "R_386_PC32");
-						}
+					if (simbol->get_section() == "UND") {
+						add_reallocation(simbol, 2, "R_386_PC32");
 					}
 				}
 				first_operand = dec_to_bin(value, 16);
@@ -382,7 +388,8 @@ string Assembler::get_operand_code(string operand, string &result) {
 	string simbol_name = is_simbol(operand, reallocation_type);
 	if (!simbol_name.empty()) {
 		Simbol *simbol = table_simbol.get(simbol_name);
-		add_reallocation(simbol, 2, reallocation_type);
+		if (simbol->get_section() == "UND")
+			add_reallocation(simbol, 2, reallocation_type);
 	}
 	//--------------------------------------
 	stringstream code;

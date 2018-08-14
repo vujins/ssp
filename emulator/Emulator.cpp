@@ -1,6 +1,7 @@
 #include "Emulator.h"
 
 Emulator::Emulator(int argc, char* argv[]) {
+	table_simbol.erase("UND");
 	for (int i = 1; i < argc; i++) files.push_back(argv[i]);
 
 	for (int i = 1; i < argc; i++)
@@ -38,6 +39,15 @@ void Emulator::read() {
 						int start = stoi(sm[2].str());
 						int end = stoi(sm[3].str());
 						int length = stoi(sm[4].str());
+
+						for (auto it : table_section) {
+							map<string, Section*> current_table = (it)->get_table();
+							for (auto pair : current_table) {
+								assert(!(pair.second->get_start_address() >= start && pair.second->get_start_address() <= end));
+								assert(!(pair.second->get_end_address() >= start && pair.second->get_end_address() <= end));
+
+							}
+						}
 						table_section[i]->add(new Section(name, start, end, length));
 					}
 				}
@@ -55,22 +65,30 @@ void Emulator::read() {
 						string section = sm[2].str();
 						int value = stoi(sm[3].str());
 						int index = stoi(sm[5].str());
+						int index_new = 0;
 						Simbol *simbol = table_simbol.get(name);
 						if (simbol) {
+							//dva globalna simbola sa istim imenom
 							assert(!(simbol->get_section() != "UND" && section != "UND"));
-							if (simbol->get_section() != "UND") continue;
-							simbol->set_value(value);
-							simbol->set_setcion(section);
+							if (simbol->get_section() != "UND") {
+								index_new = simbol->get_index();
+							}
+							else {
+								simbol->set_value(value);
+								simbol->set_setcion(section);
+							}
 						}
 						else {
 							//pravilo je da ne moze da se koristi simbol pre nego sto se definise
 							//ako je uvezen iz drugog fajla, drugi fajl treba prvi da se ucita
 							//assert(section != "UND");
-							Simbol *new_simbol = new Simbol(name, section, value, visibility);
-							table_simbol.put(name, new_simbol);
-							if (section == "UND") {
-								rel_index[index] = new_simbol->get_index();
-							}
+							Simbol *simbol_new = new Simbol(name, section, value, visibility);
+							table_simbol.put(name, simbol_new);
+							index_new = simbol_new->get_index();
+						}
+						if (section == "UND") {
+							if (index_new)
+								rel_index[index] = index_new;
 						}
 					}
 				}
@@ -126,17 +144,36 @@ void Emulator::resolve_conflict() {
 
 		write(address, value, 2);
 	}
+
+	bool is_start = false;
+	map<string, Simbol*> simbol_table = table_simbol.get_simbol_table();
+	for (auto it : simbol_table) {
+		if (it.second->get_name() == ".start") is_start = true;
+		assert(it.second->get_section() != "UND");
+	}
+	assert(is_start);
+}
+
+void Emulator::execute() {
+
 }
 
 void Emulator::output() {
 	ofstream output_filestream;
-	output_filestream.open("C:\\Users\\vana\\Documents\\ssp\\tests\\emulator_output.txt");
+	output_filestream.open(OUTPUT_FILE);
 	
 	for (string file : files) output_filestream << "#" << file << endl;
 	for (auto it : table_section) it->write(output_filestream);
 	table_simbol.write(output_filestream);
 	output_filestream << "#Reallocation table" << endl;
 	table_reallocation.write(output_filestream);
+
+	output_filestream << "1100: ";
+	for (int i = 1100; i < 1130; i++)
+		output_filestream << uppercase << hex << (int)om[i] << " ";
+	output_filestream << endl << "1200: ";
+	for (int i = 1200; i < 1230; i++)
+		output_filestream << uppercase << hex << (int)om[i] << " ";
 	
 	output_filestream.close();
 }

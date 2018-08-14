@@ -73,7 +73,7 @@ void Section::set_start_address(int start_address_) {
 }
 
 void Section::set_end_address() {
-	end_address = start_address + length;
+	end_address = start_address + length - 1;
 }
 
 SectionTable::SectionTable() {

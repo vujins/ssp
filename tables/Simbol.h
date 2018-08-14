@@ -23,6 +23,7 @@ public:
 	int get_index();
 
 	static bool is_label(string line);
+	static bool is_start(string line);
 	static string get_label_name(string line);
 	static string cut_label_from_line(string line);
 
@@ -34,7 +35,7 @@ private:
 	static int sindex;
 	int index;
 
-	static regex regex_simbol;
+	static regex regex_simbol, regex_start;
 };
 
 class SimbolTable {
@@ -49,6 +50,8 @@ public:
 	void write(ofstream &filestream);
 
 	void add_global_simbols(string line);
+
+	map<string, Simbol*> get_simbol_table();
 
 private:
 	map<string, Simbol*> table;

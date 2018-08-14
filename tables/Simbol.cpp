@@ -2,6 +2,7 @@
 #include <set>
 
 regex Simbol::regex_simbol("^[a-z0-9]+:");
+regex Simbol::regex_start("^\\.start");
 int Simbol::sindex = 0;
 
 Simbol::Simbol(string name_, string section_, int value_, string visibility_) :
@@ -44,6 +45,12 @@ int Simbol::get_index() {
 
 bool Simbol::is_label(string line) {
 	if (regex_search(line, regex_simbol)) return true;
+
+	return false;
+}
+
+bool Simbol::is_start(string line) {
+	if (regex_match(line, regex_start)) return true;
 
 	return false;
 }
@@ -135,4 +142,8 @@ void SimbolTable::add_global_simbols(string line) {
 
 		line = result.suffix().str();
 	}
+}
+
+map<string, Simbol*> SimbolTable::get_simbol_table() {
+	return table;
 }
