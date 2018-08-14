@@ -14,7 +14,7 @@ Emulator::~Emulator() {
 }
 
 void Emulator::read() {
-	for (int i = 0; i < files.size(); i++) {
+	for (size_t i = 0; i < files.size(); i++) {
 		ifstream input_filestream;
 		input_filestream.open(files[i]);
 		assert(input_filestream);
@@ -139,7 +139,7 @@ void Emulator::resolve_conflict() {
 
 		int value;
 		if (type == "R_386_PC32") {
-			value = simbol->get_value() + read(address, 2);
+			value = simbol->get_value() + read(address);
 		}
 		else {
 			value = simbol->get_value();
@@ -163,9 +163,171 @@ void Emulator::execute() {
 
 	do {
 		uint16_t ins = read_ins(r[PC]);
+
 		uint8_t opcode = ins >> 10;
+		uint8_t condition = opcode >> 4;
+		uint8_t instruction = opcode & 0xF;
+
 		uint8_t op1 = (ins >> 5) & 0x1F;
 		uint8_t op2 = ins & 0x1F;
+
+		int16_t dst;
+		int16_t src;
+		int16_t result;
+
+		bool execute = true;
+		switch (condition) {
+		case 0: //eq
+			if (!get_z()) execute = false;
+			break;
+		case 1: //ne
+			if (get_z()) execute = false;
+			break;
+		case 2: //gt
+			if (get_n()) execute = false;
+			break;
+		case 3: //al
+			break;
+		default: //pogresan uslov
+			assert(false);
+		}
+
+		switch (instruction) {
+		case 0: //add
+		case 1: //sub 
+		case 2: //mul
+		case 3: //div
+		{
+			dst = get_operand(op1);
+			src = get_operand(op2);
+			if (execute) {
+				if (instruction == 0) {
+					result = dst + src;
+					if ((src > 0) && (dst > INT16_MAX - src)) {
+						sto();
+						stc();
+					}
+					if ((src < 0) && (dst < INT16_MIN - src)) {
+						sto();
+						stc();
+					}
+				}
+				else if (instruction == 1) {
+					result = dst - src;
+					if ((src < 0) && (dst > INT_MAX + src)) {
+						sto();
+						stc();
+					}
+					if ((src > 0) && (dst < INT_MIN + src)) {
+						sto();
+						stc();
+					}
+				}
+				else if (instruction == 2) result = dst * src;
+				else if (instruction == 3) result = dst / src;
+				store_result(op1, result);
+
+				if (result == 0) stz();
+				if (result < 0) stn();
+			}
+			break;
+		}
+		case 4: //cmp
+		{
+			dst = get_operand(op1);
+			src = get_operand(op2);
+			if (execute) {
+				result = dst - src;
+				if ((src < 0) && (dst > INT_MAX + src)) {
+					sto();
+					stc();
+				}
+				if ((src > 0) && (dst < INT_MIN + src)) {
+					sto();
+					stc();
+				}
+				if (result == 0) stz();
+				if (result < 0) stn();
+			}
+			break;
+		}
+		case 5: //and
+		case 6: //or
+		case 7: //not
+		case 8: //test
+		{
+			dst = get_operand(op1);
+			src = get_operand(op2);
+
+			if (instruction == 5) result = dst & src;
+			else if (instruction == 6) result = dst | src;
+			else if (instruction == 7) result = ~src;
+			else if (instruction == 8) result = dst & src;
+
+			if (instruction =! 8) store_result(op1, result);
+
+			if (result == 0) stz();
+			if (result < 0) stn();
+			break;
+		}
+		case 9: //push
+		{
+			src = get_operand(op1);
+			push(src);
+			break;
+		}
+		case 10: //pop
+		{
+			result = pop();
+			store_result(op1, result);
+			break;
+		}
+		case 11: //call
+		{
+			src = get_operand(op1);
+			push(r[PC]);
+			r[PC] = src;
+			break;
+		}
+		case 12: //iret
+		{
+			PSW = pop();
+			r[PC] = pop();
+			break;
+		}
+		case 13: //mov
+		{
+			//TODO kako da znam da li da citam .char .word ili .long ako je mem dir
+			src = get_operand(op2); //AKO JE MEM DIR SA LABELOM
+			store_result(op1, src);
+			if (src == 0) stz();
+			if (src < 0) stn();
+			break;
+		}
+		case 14: //shl
+		case 15: //shr
+		{
+			dst = get_operand(op1);
+			src = get_operand(op2);
+			
+			if (instruction == 14) {
+				result = dst << src;
+				if (dst & 0x80) stc();
+			}
+			if (instruction == 15) {
+				result = dst >> src;
+				if (dst & 1) stc();
+			}
+			store_result(op1, src);
+
+			if (result == 0) stz();
+			if (result < 0) stn();
+			break;
+		}
+		default: //pogresna instrukcija
+			assert(false);
+		}
+
 	} while (r[PC] != end_address + 1);
 }
 
@@ -173,7 +335,7 @@ void Emulator::output() {
 	ofstream output_filestream;
 	output_filestream.open(OUTPUT_FILE);
 	assert(output_filestream);
-	
+
 	for (string file : files) output_filestream << "#" << file << endl;
 	for (auto it : table_section) it->write(output_filestream);
 	table_simbol.write(output_filestream);
@@ -186,8 +348,82 @@ void Emulator::output() {
 	//output_filestream << endl << "1200: ";
 	//for (int i = 1200; i < 1230; i++)
 	//	output_filestream << uppercase << hex << (int)om[i] << " ";
-	
+	output_filestream << endl;
+	for (int i = 0; i < 8; i++) {
+		output_filestream << "r[" << i << "] = " << r[i] << " ";
+	}
+
 	output_filestream.close();
+}
+
+int16_t Emulator::get_operand(uint8_t op) {
+	int16_t operand;
+	uint8_t op_type = op >> 3;
+	uint8_t op_reg = op & 0x3;
+
+	switch (op_type) {
+	case 0: {//immediate or PSW
+		if (op_reg == 3) operand = PSW;
+		else {
+			operand = read(r[PC]);
+			r[PC] += 2;
+		}
+		break;
+	}
+	case 1: {//reg dir
+		operand = r[op_reg];
+		break;
+	}
+	case 2: {//mem dir
+		uint16_t address = read(r[PC]);
+		r[PC] += 2;
+		operand = om[address];
+		break;
+	}
+	case 3: {//reg ind
+		int16_t offset = read(r[PC]);
+		r[PC] += 2;
+		operand = r[op_reg] + offset;
+		break;
+	}
+	default: {//pogresna operacija
+		assert(false);
+	}
+	}
+
+	return operand;
+}
+
+void Emulator::store_result(uint8_t op, int16_t result) {
+	int16_t operand;
+	uint8_t op_type = op >> 3;
+	uint8_t op_reg = op & 0x3;
+
+	switch (op_type) {
+	case 0: {//immediate or PSW
+		if (op_reg == 3) PSW = result;
+		else assert(false);
+		break;
+	}
+	case 1: {//reg dir
+		r[op_reg] = result;
+		break;
+	}
+	case 2: {//mem dir
+		uint16_t address = read(r[PC - 2]);
+		write(address, result);
+		break;
+	}
+	case 3: {//reg ind
+		int16_t offset = read(r[PC - 2]);
+		uint16_t address = r[op_reg] + offset;
+		om[address] = result;
+		break;
+	}
+	default: {//pogresna operacija
+		assert(false);
+	}
+	}
 }
 
 void Emulator::cli() {
@@ -256,21 +492,20 @@ void Emulator::write(uint16_t addr, int data, int bytes) {
 	string hex = decimal_to_hex(data);
 	hex = little_endian_from_hex(hex, bytes);
 	for (int i = 0; i < bytes; i++) {
-		int n = hex_to_decimal(hex.substr(2*i, 2));
+		int n = hex_to_decimal(hex.substr(2 * i, 2));
 		write(addr + i, n);
 	}
 }
 
-int Emulator::read(uint16_t address, int bytes) {
+int Emulator::read(uint16_t address) {
 	check_address(address);
 
 	stringstream ss;
-	for (int i = bytes - 1; i >= 0; i--) {
-		ss << hex << (int)om[address + i];
+	for (int i = 1; i >= 0; i--) {
+		if (om[address + i] < 0x10) ss << '0';
+		ss << hex << (int16_t)om[address + i];
 	}
 
-	if (bytes == 1) return (int8_t)hex_to_decimal(ss.str());
-	if (bytes == 2) return (int16_t)hex_to_decimal(ss.str());
 	return hex_to_decimal(ss.str());
 }
 

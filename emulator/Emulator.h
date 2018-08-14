@@ -29,6 +29,9 @@ public:
 	void output();
 
 protected:
+	int16_t get_operand(uint8_t op);
+	void store_result(uint8_t op, int16_t result);
+
 	//setters
 	void sti();
 	void stz();
@@ -55,7 +58,7 @@ protected:
 	void write(uint16_t addr, uint8_t data);
 	void write(uint16_t addr, int data, int bytes);
 	//little-endian
-	int read(uint16_t address, int bytes);
+	int read(uint16_t address);
 	uint16_t read_ins(uint16_t &address);
 
 	void push(uint8_t data);
@@ -64,9 +67,9 @@ protected:
 
 private:
 	vector<string> files;
-	//od adrese 0 nalazi se IVT sa 8 ulaza od po 2 bajta
-	//poslednjih 128 bajtova rezervisano za periferije
+
 	uint8_t om[OM_SIZE];
+
 	uint16_t r[8];
 	uint16_t PSW;
 	uint16_t end_address;
