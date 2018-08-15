@@ -22,13 +22,17 @@ public:
 	Emulator(int argc, char* argv[]);
 	~Emulator();
 
+	void run();
+
+	bool get_periodic();
+
+protected:
 	void read();
 	void resolve_conflict();
 	void execute();
 
 	void output();
 
-protected:
 	int16_t get_operand(uint8_t op);
 	void store_result(uint8_t op, int16_t result);
 
@@ -52,17 +56,19 @@ protected:
 	bool get_o();
 	bool get_c();
 	bool get_n();
-	bool get_periodic();
+
 
 	void check_address(uint16_t addr);
 	void write(uint16_t addr, uint8_t data);
 	void write(uint16_t addr, int data, int bytes);
 	//little-endian
-	int read(uint16_t address);
-	uint16_t read_ins(uint16_t &address);
+	int read(uint16_t address, int bytes);
+	uint16_t read_ins();
 
 	void push(uint8_t data);
+	void pushw(uint16_t data);
 	uint8_t pop();
+	uint16_t popw();
 
 
 private:

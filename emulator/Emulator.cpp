@@ -13,6 +13,14 @@ Emulator::~Emulator() {
 	for (auto it : table_section) delete it;
 }
 
+void Emulator::run() {
+	read();
+	resolve_conflict();
+	execute();
+
+	output();
+}
+
 void Emulator::read() {
 	for (size_t i = 0; i < files.size(); i++) {
 		ifstream input_filestream;
@@ -139,7 +147,7 @@ void Emulator::resolve_conflict() {
 
 		int value;
 		if (type == "R_386_PC32") {
-			value = simbol->get_value() + read(address);
+			value = simbol->get_value() + read(address, 2);
 		}
 		else {
 			value = simbol->get_value();
@@ -162,7 +170,7 @@ void Emulator::execute() {
 	r[SP] = STACK_END + 1;
 
 	do {
-		uint16_t ins = read_ins(r[PC]);
+		uint16_t ins = read_ins();
 
 		uint8_t opcode = ins >> 10;
 		uint8_t condition = opcode >> 4;
@@ -200,55 +208,75 @@ void Emulator::execute() {
 		{
 			dst = get_operand(op1);
 			src = get_operand(op2);
-			if (execute) {
-				if (instruction == 0) {
-					result = dst + src;
-					if ((src > 0) && (dst > INT16_MAX - src)) {
-						sto();
-						stc();
-					}
-					if ((src < 0) && (dst < INT16_MIN - src)) {
-						sto();
-						stc();
-					}
+			if (!execute) break;
+			if (instruction == 0) {
+				result = dst + src;
+				if ((src > 0) && (dst > INT16_MAX - src)) {
+					sto();
+					stc();
 				}
-				else if (instruction == 1) {
-					result = dst - src;
-					if ((src < 0) && (dst > INT_MAX + src)) {
-						sto();
-						stc();
-					}
-					if ((src > 0) && (dst < INT_MIN + src)) {
-						sto();
-						stc();
-					}
+				else if ((src < 0) && (dst < INT16_MIN - src)) {
+					sto();
+					stc();
 				}
-				else if (instruction == 2) result = dst * src;
-				else if (instruction == 3) result = dst / src;
-				store_result(op1, result);
-
-				if (result == 0) stz();
-				if (result < 0) stn();
+				else {
+					clo();
+					clc();
+				}
 			}
+			else if (instruction == 1) {
+				result = dst - src;
+				if ((src < 0) && (dst > INT_MAX + src)) {
+					sto();
+					stc();
+				}
+				else if ((src > 0) && (dst < INT_MIN + src)) {
+					sto();
+					stc();
+				}
+				else {
+					clo();
+					stc();
+				}
+
+			}
+			else if (instruction == 2) result = dst * src;
+			else if (instruction == 3) result = dst / src;
+			store_result(op1, result);
+
+			if (result == 0) stz();
+			else clz();
+			if (result < 0) stn();
+			else clz();
+
 			break;
 		}
 		case 4: //cmp
 		{
 			dst = get_operand(op1);
 			src = get_operand(op2);
-			if (execute) {
-				result = dst - src;
-				if ((src < 0) && (dst > INT_MAX + src)) {
-					sto();
-					stc();
-				}
-				if ((src > 0) && (dst < INT_MIN + src)) {
-					sto();
-					stc();
-				}
-				if (result == 0) stz();
-				if (result < 0) stn();
+
+			if (!execute) break;
+
+			result = dst - src;
+			if ((src < 0) && (dst > INT_MAX + src)) {
+				sto();
+				stc();
 			}
+			else if ((src > 0) && (dst < INT_MIN + src)) {
+				sto();
+				stc();
+			}
+			else {
+				clo();
+				clc();
+			}
+
+			if (result == 0) stz();
+			else clz();
+			if (result < 0) stn();
+			else cln();
+
 			break;
 		}
 		case 5: //and
@@ -259,49 +287,67 @@ void Emulator::execute() {
 			dst = get_operand(op1);
 			src = get_operand(op2);
 
+			if (!execute) break;
+
 			if (instruction == 5) result = dst & src;
 			else if (instruction == 6) result = dst | src;
 			else if (instruction == 7) result = ~src;
 			else if (instruction == 8) result = dst & src;
 
-			if (instruction =! 8) store_result(op1, result);
+			if (instruction != 8) store_result(op1, result);
 
 			if (result == 0) stz();
+			else clz();
 			if (result < 0) stn();
+			else cln();
 			break;
 		}
 		case 9: //push
 		{
 			src = get_operand(op1);
-			push(src);
+
+			if (!execute) break;
+
+			pushw(src);
+
 			break;
 		}
 		case 10: //pop
 		{
-			result = pop();
+			if (!execute) break;
+
+			result = popw();
 			store_result(op1, result);
 			break;
 		}
 		case 11: //call
 		{
 			src = get_operand(op1);
-			push(r[PC]);
+
+			if (!execute) break;
+
+			pushw(r[PC]);
 			r[PC] = src;
 			break;
 		}
 		case 12: //iret
 		{
-			PSW = pop();
-			r[PC] = pop();
+			if (!execute) break;
+			PSW = popw();
+			r[PC] = popw();
 			break;
 		}
 		case 13: //mov
 		{
-			//TODO kako da znam da li da citam .char .word ili .long ako je mem dir
-			src = get_operand(op2); //AKO JE MEM DIR SA LABELOM
+			src = get_operand(op2);
+
+			if (!execute) break;
+
 			store_result(op1, src);
 			if (src == 0) stz();
+			else clz();
 			if (src < 0) stn();
+			else cln();
 			break;
 		}
 		case 14: //shl
@@ -309,19 +355,25 @@ void Emulator::execute() {
 		{
 			dst = get_operand(op1);
 			src = get_operand(op2);
-			
+
+			if (!execute) break;
+
 			if (instruction == 14) {
 				result = dst << src;
 				if (dst & 0x80) stc();
+				else clc();
 			}
 			if (instruction == 15) {
 				result = dst >> src;
 				if (dst & 1) stc();
+				else clc();
 			}
 			store_result(op1, src);
 
 			if (result == 0) stz();
+			else clz();
 			if (result < 0) stn();
+			else cln();
 			break;
 		}
 		default: //pogresna instrukcija
@@ -359,13 +411,13 @@ void Emulator::output() {
 int16_t Emulator::get_operand(uint8_t op) {
 	int16_t operand;
 	uint8_t op_type = op >> 3;
-	uint8_t op_reg = op & 0x3;
+	uint8_t op_reg = op & 0x7;
 
 	switch (op_type) {
 	case 0: {//immediate or PSW
 		if (op_reg == 3) operand = PSW;
 		else {
-			operand = read(r[PC]);
+			operand = read(r[PC], 2);
 			r[PC] += 2;
 		}
 		break;
@@ -375,15 +427,16 @@ int16_t Emulator::get_operand(uint8_t op) {
 		break;
 	}
 	case 2: {//mem dir
-		uint16_t address = read(r[PC]);
+		uint16_t address = read(r[PC], 2);
 		r[PC] += 2;
-		operand = om[address];
+		//operand = om[address];
+		operand = read(address, 1);
 		break;
 	}
 	case 3: {//reg ind
-		int16_t offset = read(r[PC]);
+		int16_t offset = read(r[PC], 2);
 		r[PC] += 2;
-		operand = r[op_reg] + offset;
+		operand = read(r[op_reg] + offset, 1);
 		break;
 	}
 	default: {//pogresna operacija
@@ -397,7 +450,7 @@ int16_t Emulator::get_operand(uint8_t op) {
 void Emulator::store_result(uint8_t op, int16_t result) {
 	int16_t operand;
 	uint8_t op_type = op >> 3;
-	uint8_t op_reg = op & 0x3;
+	uint8_t op_reg = op & 0x7;
 
 	switch (op_type) {
 	case 0: {//immediate or PSW
@@ -410,14 +463,15 @@ void Emulator::store_result(uint8_t op, int16_t result) {
 		break;
 	}
 	case 2: {//mem dir
-		uint16_t address = read(r[PC - 2]);
+		uint16_t address = read(r[PC - 2], 2);
 		write(address, result);
 		break;
 	}
 	case 3: {//reg ind
-		int16_t offset = read(r[PC - 2]);
+		int16_t offset = read(r[PC - 2], 2);
 		uint16_t address = r[op_reg] + offset;
-		om[address] = result;
+		//om[address] = result;
+		write(address, result);
 		break;
 	}
 	default: {//pogresna operacija
@@ -497,24 +551,26 @@ void Emulator::write(uint16_t addr, int data, int bytes) {
 	}
 }
 
-int Emulator::read(uint16_t address) {
+int Emulator::read(uint16_t address, int bytes) {
 	check_address(address);
 
 	stringstream ss;
-	for (int i = 1; i >= 0; i--) {
+	for (int i = bytes - 1; i >= 0; i--) {
 		if (om[address + i] < 0x10) ss << '0';
 		ss << hex << (int16_t)om[address + i];
 	}
 
+	if (bytes == 1) (int8_t)hex_to_decimal(ss.str());
+	if (bytes == 2) (int16_t)hex_to_decimal(ss.str());
 	return hex_to_decimal(ss.str());
 }
 
-uint16_t Emulator::read_ins(uint16_t &address) {
-	check_address(address);
+uint16_t Emulator::read_ins() {
+	check_address(r[PC]);
 
-	uint16_t ins = om[address++];
+	uint16_t ins = om[r[PC]++];
 	ins <<= 8;
-	ins += om[address++];
+	ins += om[r[PC]++];
 
 	return ins;
 }
@@ -524,9 +580,23 @@ void Emulator::push(uint8_t data) {
 	om[--r[SP]] = data;
 }
 
+void Emulator::pushw(uint16_t data) {
+	push(data);
+	push(data >> 8);
+}
+
 uint8_t Emulator::pop() {
 	assert(r[SP] <= STACK_END);
 	return om[r[SP]++];
+}
+
+uint16_t Emulator::popw() {
+	uint16_t result;
+
+	result = pop() << 8;
+	result += pop();
+
+	return result;
 }
 
 void Emulator::sti() {
