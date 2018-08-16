@@ -19,7 +19,7 @@ void Emulator::run() {
 	execute();
 	output();
 
-	this_thread::sleep_for(chrono::seconds(10));
+	this_thread::sleep_for(chrono::seconds(5));
 
 
 	finished = true;
@@ -423,7 +423,7 @@ int16_t Emulator::get_operand(uint8_t op) {
 
 	switch (op_type) {
 	case 0: {//immediate or PSW
-		if (op_reg == 3) operand = PSW;
+		if (op_reg == 7) operand = PSW;
 		else {
 			operand = read(r[PC], 2);
 			r[PC] += 2;
@@ -461,7 +461,7 @@ void Emulator::store_result(uint8_t op, int16_t result) {
 
 	switch (op_type) {
 	case 0: {//immediate or PSW
-		if (op_reg == 3) PSW = result;
+		if (op_reg == 7) PSW = result;
 		else assert(false);
 		break;
 	}

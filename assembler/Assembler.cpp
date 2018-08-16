@@ -438,6 +438,9 @@ string Assembler::get_operand_code(string operand, string &result) {
 		int value = table_simbol.get((sm[1].str()))->get_value();
 		result = dec_to_bin(value, 16);
 	}
+	else if (operand == "PSW") {
+		code << "00111";
+	}
 	else if (table_simbol.get(operand)) {
 		//memorisko direktno (samo labela): labela
 		code << "10000";

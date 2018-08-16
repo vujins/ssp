@@ -1,15 +1,20 @@
 #include "Emulator.h"
+#include "input.h"
+
 #include <thread>
 #include <chrono>
 #include <iostream>
-#include <windows.h>
 
 #define PERIOD 1
 
+using namespace std;
+using namespace input;
+
 void periodic_job(Emulator &emulator) {
 	cout << "Periodic thread started!" << endl;
-	
+
 	while (!emulator.is_finished()) {
+		if (!emulator.get_periodic()) continue;
 		cout << "Periodic job" << endl;
 
 		this_thread::sleep_for(chrono::seconds(PERIOD));
@@ -17,15 +22,20 @@ void periodic_job(Emulator &emulator) {
 	
 }
 
-
 int main(int argc, char *argv[]) {
 
-	if (0) {
+	if (1) {
 		Emulator emulator(argc, argv);
 		thread emulator_thread(&Emulator::run, &emulator);
 		thread periodic_thread(periodic_job, ref(emulator));
-		
 
+		while (true) {
+			// ReSharper disable once CppPossiblyErroneousEmptyStatements
+			while (!keyboard_hit());
+			char c = get_char();
+			if (c == 'q') break;
+			std::cout << "Input character: " << c << std::endl;
+		}
 
 		emulator_thread.join();
 		periodic_thread.join();
@@ -33,29 +43,14 @@ int main(int argc, char *argv[]) {
 		cout << "Emulation completed!" << endl;
 	}
 	else {
-		//HANDLE hstdin;
-		//DWORD  mode;
 
-		//hstdin = GetStdHandle(STD_INPUT_HANDLE);
-		//GetConsoleMode(hstdin, &mode);
-		//SetConsoleMode(hstdin, ENABLE_ECHO_INPUT | ENABLE_PROCESSED_INPUT);  // see note below
-
-		//char c;
-		//int i = 0;
-		//while (i++ != 4) {
-		//	c = cin.get();
-		//	if (c == 27) cout << "you pressed ESC" << endl;
-		//	else cout << "you didnt press ESC" << endl;
-		//}
-
-		//SetConsoleMode(hstdin, mode);
-
-		cout << hex << &periodic_job << endl;
-
-		//Emulator emulator(argc, argv);
-		cout << hex << &Emulator::run << endl;
-		cout << hex << &Emulator::get_periodic << endl;
-		cout << hex << &Emulator::inter << endl;
+		while (true) {
+			// ReSharper disable once CppPossiblyErroneousEmptyStatements
+			while (!keyboard_hit());
+			char c = get_char();
+			if (c == 'q') return 0;
+			std::cout << "Input character: " << c << std::endl;
+		}
 
 	}
 
