@@ -1,6 +1,6 @@
 #include "Emulator.h"
 
-Emulator::Emulator(int argc, char* argv[]) {
+Emulator::Emulator(int argc, char* argv[]) : finished(false) {
 	table_simbol.erase("UND");
 	for (int i = 1; i < argc; i++) files.push_back(argv[i]);
 
@@ -17,8 +17,16 @@ void Emulator::run() {
 	read();
 	resolve_conflict();
 	execute();
-
 	output();
+
+	this_thread::sleep_for(chrono::seconds(10));
+
+
+	finished = true;
+}
+
+void Emulator::inter()
+{
 }
 
 void Emulator::read() {
@@ -448,7 +456,6 @@ int16_t Emulator::get_operand(uint8_t op) {
 }
 
 void Emulator::store_result(uint8_t op, int16_t result) {
-	int16_t operand;
 	uint8_t op_type = op >> 3;
 	uint8_t op_reg = op & 0x7;
 
@@ -464,14 +471,14 @@ void Emulator::store_result(uint8_t op, int16_t result) {
 	}
 	case 2: {//mem dir
 		uint16_t address = read(r[PC - 2], 2);
-		write(address, result);
+		write(address, result, 2);
 		break;
 	}
 	case 3: {//reg ind
 		int16_t offset = read(r[PC - 2], 2);
 		uint16_t address = r[op_reg] + offset;
 		//om[address] = result;
-		write(address, result);
+		write(address, result, 2);
 		break;
 	}
 	default: {//pogresna operacija
@@ -526,6 +533,10 @@ bool Emulator::get_n() {
 
 bool Emulator::get_periodic() {
 	return PSW & FLAG_periodic;
+}
+
+bool Emulator::is_finished() {
+	return finished;
 }
 
 void Emulator::check_address(uint16_t addr) {

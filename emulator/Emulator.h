@@ -7,6 +7,10 @@
 #include <iostream>
 #include <regex>
 
+//TODO obrisi
+#include <thread>
+#include <chrono>
+
 #include "config.h"
 #include "OpCode.h"
 #include "Section.h"
@@ -24,7 +28,10 @@ public:
 
 	void run();
 
+	void static inter();
+
 	bool get_periodic();
+	bool is_finished();
 
 protected:
 	void read();
@@ -72,6 +79,7 @@ protected:
 
 
 private:
+	bool finished;
 	vector<string> files;
 
 	uint8_t om[OM_SIZE];
