@@ -9,9 +9,14 @@ Emulator::Emulator(int argc, char* argv[]) : finished(false) {
 	for (int i = 1; i < argc; i++)
 		table_section.push_back(new SectionTable());
 
-	write(0, (uint16_t)interrupt_start, 2);
+	intptr_t ptr;
+	ptr = (intptr_t)interrupt_start;
+	write(0, (uint16_t)ptr, 2);
+	ptr = (intptr_t)interrupt_periodic;
 	write(2, (uint16_t)interrupt_periodic, 2);
+	ptr = (intptr_t)interrupt_illegal_ins;
 	write(4, (uint16_t)interrupt_illegal_ins, 2);
+	ptr = (intptr_t)interrupt_input;
 	write(6, (uint16_t)interrupt_input, 2);
 
 	interrupt(i_start);
@@ -252,11 +257,11 @@ void Emulator::execute() {
 			}
 			else if (instruction == 1) {
 				result = dst - src;
-				if ((src < 0) && (dst > INT_MAX + src)) {
+				if ((src < 0) && (dst > INT16_MAX + src)) {
 					sto();
 					stc();
 				}
-				else if ((src > 0) && (dst < INT_MIN + src)) {
+				else if ((src > 0) && (dst < INT16_MIN + src)) {
 					sto();
 					stc();
 				}
@@ -285,11 +290,11 @@ void Emulator::execute() {
 			if (!execute) break;
 
 			result = dst - src;
-			if ((src < 0) && (dst > INT_MAX + src)) {
+			if ((src < 0) && (dst > INT16_MAX + src)) {
 				sto();
 				stc();
 			}
-			else if ((src > 0) && (dst < INT_MIN + src)) {
+			else if ((src > 0) && (dst < INT16_MIN + src)) {
 				sto();
 				stc();
 			}
@@ -386,7 +391,7 @@ void Emulator::execute() {
 
 			if (instruction == 14) {
 				result = dst << src;
-				if (dst & 0x80) stc();
+				if (dst & 0x8000) stc();
 				else clc();
 			}
 			if (instruction == 15) {
