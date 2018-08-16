@@ -32,4 +32,12 @@
 #define IO_END 0xFFFF //2^16 - 1
 #define IO_SIZE 128
 
+//interrupt
+enum {
+	i_start,
+	i_periodic,
+	i_illegal_ins,
+	i_input
+};
+
 #endif

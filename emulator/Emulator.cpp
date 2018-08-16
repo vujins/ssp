@@ -1,11 +1,22 @@
 #include "Emulator.h"
 
+Emulator* Emulator::global_emulator = nullptr;
+
 Emulator::Emulator(int argc, char* argv[]) : finished(false) {
 	table_simbol.erase("UND");
 	for (int i = 1; i < argc; i++) files.push_back(argv[i]);
 
 	for (int i = 1; i < argc; i++)
 		table_section.push_back(new SectionTable());
+
+	write(0, (uint16_t)interrupt_start, 2);
+	write(2, (uint16_t)interrupt_periodic, 2);
+	write(4, (uint16_t)interrupt_illegal_ins, 2);
+	write(6, (uint16_t)interrupt_input, 2);
+
+	interrupt(i_start);
+
+	if (!global_emulator) global_emulator = this;
 }
 
 
@@ -25,8 +36,15 @@ void Emulator::run() {
 	finished = true;
 }
 
-void Emulator::inter()
-{
+void Emulator::interrupt(int i) {
+	uint32_t segment = (uint32_t)interrupt_start & 0xffff0000;
+	uint16_t offset = read(2 * i, 2);
+	void (*ptr)() = (void (*)())(segment + offset);
+	ptr();
+}
+
+void Emulator::input_char(char c) {
+	write(0xFFFC, c);
 }
 
 void Emulator::read() {
@@ -205,7 +223,7 @@ void Emulator::execute() {
 		case 3: //al
 			break;
 		default: //pogresan uslov
-			assert(false);
+			interrupt(i_illegal_ins);
 		}
 
 		switch (instruction) {
@@ -385,7 +403,7 @@ void Emulator::execute() {
 			break;
 		}
 		default: //pogresna instrukcija
-			assert(false);
+			interrupt(i_illegal_ins);
 		}
 
 	} while (r[PC] != end_address + 1);
@@ -448,7 +466,7 @@ int16_t Emulator::get_operand(uint8_t op) {
 		break;
 	}
 	default: {//pogresna operacija
-		assert(false);
+		interrupt(i_illegal_ins);
 	}
 	}
 
@@ -482,7 +500,7 @@ void Emulator::store_result(uint8_t op, int16_t result) {
 		break;
 	}
 	default: {//pogresna operacija
-		assert(false);
+		interrupt(i_illegal_ins);
 	}
 	}
 }
@@ -539,12 +557,30 @@ bool Emulator::is_finished() {
 	return finished;
 }
 
+void Emulator::interrupt_start() {
+	cout << "Emulation started!" << endl;
+}
+
+void Emulator::interrupt_periodic() {
+	cout << "Periodic job" << endl;
+}
+
+void Emulator::interrupt_illegal_ins() {
+	cout << "Illegal instruction!" << endl;
+	assert(false);
+}
+
+void Emulator::interrupt_input() {
+	char c = global_emulator->read(0xFFFC, 1);
+	cout << "Interrupt input: " << c << endl;
+}
+
 void Emulator::check_address(uint16_t addr) {
 	assert(addr >= 16 && addr < STACK_START);
 }
 
 void Emulator::write(uint16_t addr, uint8_t data) {
-	check_address(addr);
+	//check_address(addr);
 
 	om[addr] = data;
 	if (addr_cout == addr) {
@@ -563,7 +599,7 @@ void Emulator::write(uint16_t addr, int data, int bytes) {
 }
 
 int Emulator::read(uint16_t address, int bytes) {
-	check_address(address);
+	//check_address(address);
 
 	stringstream ss;
 	for (int i = bytes - 1; i >= 0; i--) {

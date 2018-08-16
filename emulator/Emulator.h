@@ -19,6 +19,7 @@
 
 using namespace std;
 
+//TODO promeni define kad budes radio javni test
 #define OUTPUT_FILE "C:\\Users\\vana\\Documents\\ssp\\tests\\ins\\emulator.txt"
 
 class Emulator {
@@ -28,12 +29,19 @@ public:
 
 	void run();
 
-	void static inter();
+	void interrupt(int i);
+	void input_char(char c);
 
 	bool get_periodic();
 	bool is_finished();
 
 protected:
+	static void interrupt_start();
+	static void interrupt_periodic();
+	static void interrupt_illegal_ins();
+	static void interrupt_input();
+
+
 	void read();
 	void resolve_conflict();
 	void execute();
@@ -66,8 +74,8 @@ protected:
 
 
 	void check_address(uint16_t addr);
-	void write(uint16_t addr, uint8_t data);
 	void write(uint16_t addr, int data, int bytes);
+	void write(uint16_t addr, uint8_t data);
 	//little-endian
 	int read(uint16_t address, int bytes);
 	uint16_t read_ins();
@@ -77,8 +85,9 @@ protected:
 	uint8_t pop();
 	uint16_t popw();
 
-
 private:
+	static Emulator *global_emulator;
+
 	bool finished;
 	vector<string> files;
 
@@ -88,7 +97,6 @@ private:
 	uint16_t PSW;
 	uint16_t end_address;
 
-	OpCodeTable table_opcode;
 	vector<SectionTable*> table_section;
 	SimbolTable table_simbol;
 	ReallocationTable table_reallocation;
