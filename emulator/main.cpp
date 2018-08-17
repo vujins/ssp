@@ -32,7 +32,10 @@ int main(int argc, char *argv[]) {
 		while (true) {
 			while (!keyboard_hit());
 			char c = get_char();
-			if (c == 'q') break;
+			if (c == 'q') {
+				cout << "Char input finished!" << endl;
+				break;
+			}
 			emulator.input_char(c);
 			emulator.interrupt(i_input);
 		}
@@ -43,20 +46,7 @@ int main(int argc, char *argv[]) {
 		cout << "Emulation completed!" << endl;
 	}
 	else {
-		int16_t src, dst;
 
-		src = 0x8000;
-		dst = 0xFFFF;
-
-		if ((src > 0) && (dst > INT16_MAX - src)) {
-			cout << "overflow" << endl;
-		}
-		else if ((src < 0) && (dst < INT16_MIN - src)) {
-			cout << "overflow" << endl;
-		}
-		else {
-			cout << "nije overflow" << endl;
-		}
 	}
 	return 0;
 }

@@ -9,15 +9,10 @@ Emulator::Emulator(int argc, char* argv[]) : finished(false) {
 	for (int i = 1; i < argc; i++)
 		table_section.push_back(new SectionTable());
 
-	intptr_t ptr;
-	ptr = (intptr_t)interrupt_start;
-	write(0, (uint16_t)ptr, 2);
-	ptr = (intptr_t)interrupt_periodic;
-	write(2, (uint16_t)interrupt_periodic, 2);
-	ptr = (intptr_t)interrupt_illegal_ins;
-	write(4, (uint16_t)interrupt_illegal_ins, 2);
-	ptr = (intptr_t)interrupt_input;
-	write(6, (uint16_t)interrupt_input, 2);
+	write(0, reinterpret_cast<uint32_t> (interrupt_start), 2);
+	write(2, reinterpret_cast<uint32_t> (interrupt_periodic), 2);
+	write(4, reinterpret_cast<uint32_t> (interrupt_illegal_ins), 2);
+	write(6, reinterpret_cast<uint32_t> (interrupt_input), 2);
 
 	interrupt(i_start);
 
