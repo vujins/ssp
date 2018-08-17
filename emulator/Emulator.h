@@ -20,7 +20,7 @@
 using namespace std;
 
 //TODO promeni define kad budes radio javni test
-#define OUTPUT_FILE "C:\\Users\\vana\\Documents\\ssp\\tests\\ins\\emulator.txt"
+#define OUTPUT_FILE "C:\\Users\\vana\\Desktop\\emulator.txt"
 
 class Emulator {
 public:

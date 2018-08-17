@@ -9,10 +9,6 @@
 #include "Reallocation.h"
 #include "functions.h"
 
-//TODO promeni define kad budes radio javni test
-//C:\\Users\\vana\\Documents\\ssp\\tests\\output.txt
-#define OUTPUT_FILE "C:\\Users\\vana\\Documents\\ssp\\tests\\ins\\output.txt"
-
 class Assembler {
 public:
 	Assembler(const char *file, int start_address_);

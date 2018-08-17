@@ -273,7 +273,7 @@ void Emulator::execute() {
 			if (result == 0) stz();
 			else clz();
 			if (result < 0) stn();
-			else clz();
+			else cln();
 
 			break;
 		}

@@ -133,9 +133,13 @@ void Assembler::second_pass() {
 }
 
 void Assembler::output() {
-	output_filestream.open(OUTPUT_FILE);
+	int position = file_name.rfind('\\');
+	if (position != string::npos) file_name = file_name.substr(position + 1);
+	string output_filename = "assembler_" + file_name;
+
+	output_filestream.open(output_filename);
 	if (!output_filestream.is_open())
-		throw invalid_argument("Output file path does not exist!");
+		throw invalid_argument("Output file path does not exist! Path: " + output_filename);
 
 	output_filestream << "#" << file_name << endl;
 	table_section.write(output_filestream);
