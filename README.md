@@ -1,8 +1,11 @@
 # ssp
 
 Opis problema
+
 Problem je napraviti dvoprolazni asembler i emulator. Ulaz asemblera je tekstualni fajl (asemblerski kod) i pocetna adresa masinskog koda u memoriji. Izlaz asemblera je tekstualni fajl sa tabelom sekcija, simbola, realokacija i masinskim kodom za svaku sekciju. Taj tekstualni falj, kao i drugi u istom formatu, su ulaz emulatora ciji je posao da procita ceo fajl i izvrsi dati masinski kod.
+
 Opis resenja
+
 Projekat se sastoji iz dve staticke biblioteke i dva projekta koja koriste te biblioteke. 
 Prva biblioteka, tables, sadrzi pomocne strukture za cuvanje sekcija, simbola, realokacija i njihovih tabela. Takodje sadrzi pomocne funkcije koje se koriste za pretvaranje brojeva u razlicite sisteme i formate koje sluze za ispis i citanje. 
 Druga biblioteka, input, sluzi za ucitavanje karaktera sa standardnog ulaza. Da bi to uspela, biblioteka prilikom pokretanja menja nacin rada konzole na Linuxu.
