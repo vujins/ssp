@@ -13,7 +13,7 @@ Druga biblioteka, input, sluzi za ucitavanje karaktera sa standardnog ulaza. Da 
 Projekat assembler koristi biblioteku tables i sluzi za citanje asemblerskog koda iz tekstualnog fajla i kreiranje objektnog fajla. Sastoji se iz svih struktura podataka koje nudi biblioteka tables. Prilikom prvog prolaza asemblerskog koda, citaju se svi simboli koji su definisani u kodu i upisuju se u tabelu simbola, citaju se sve definisane sekcije i cuvaju se u tabeli sekcija i inkrementira se location counter za svaku procitanu instrukciju. Na pocetku drugog prolaza restartuje se location counter i filestream za ulazni fajl. Tokom drugog prolaza, azuriraju se globalni simboli u tabeli i desifruju se sve instrukcije i direktive.
 
 Projekat emulator koristi obe opisane biblioteke i sluzi za citanje objektnog fajla koji generise asembler i izvrsavanje istog. Ulaz ovog projekta su izlazni fajlovi asemblera. U jednom od tih fajlova mora biti definisan simbol .start, ne smeju se preklapati adrese u memoriji i ne sme postojati visestruka definicija globalnih simbola. Prvi zadatak emulatora je da procita sve objekne fajlove i da konstruise svoje strukture podataka za sekcije i simbole. Drugi zadatak je da razresi sve realokacije koje su nastale tokom asembliranja i da izmeni masinski kod zbog nastalih realokacija. Treci zadatak emulatora je da desifruje masinski kod i da izvrsi asemblerski program pocev od simbola .start. Izlaz emulatora je tekstualni fajl koji ispisuje sve strukture podataka, deo memorije i sve registre.
- 
+
 Uputstvo za prevodjenje
 
 Za prevodjenje je koriscen g++-6 paket. Za instalaciju paketa potrebne su sledece instrukcije:
