@@ -9,23 +9,29 @@ Opis resenja
 Projekat se sastoji iz dve staticke biblioteke i dva projekta koja koriste te biblioteke. 
 Prva biblioteka, tables, sadrzi pomocne strukture za cuvanje sekcija, simbola, realokacija i njihovih tabela. Takodje sadrzi pomocne funkcije koje se koriste za pretvaranje brojeva u razlicite sisteme i formate koje sluze za ispis i citanje. 
 Druga biblioteka, input, sluzi za ucitavanje karaktera sa standardnog ulaza. Da bi to uspela, biblioteka prilikom pokretanja menja nacin rada konzole na Linuxu.
+
 Projekat assembler koristi biblioteku tables i sluzi za citanje asemblerskog koda iz tekstualnog fajla i kreiranje objektnog fajla. Sastoji se iz svih struktura podataka koje nudi biblioteka tables. Prilikom prvog prolaza asemblerskog koda, citaju se svi simboli koji su definisani u kodu i upisuju se u tabelu simbola, citaju se sve definisane sekcije i cuvaju se u tabeli sekcija i inkrementira se location counter za svaku procitanu instrukciju. Na pocetku drugog prolaza restartuje se location counter i filestream za ulazni fajl. Tokom drugog prolaza, azuriraju se globalni simboli u tabeli i desifruju se sve instrukcije i direktive.
+
 Projekat emulator koristi obe opisane biblioteke i sluzi za citanje objektnog fajla koji generise asembler i izvrsavanje istog. Ulaz ovog projekta su izlazni fajlovi asemblera. U jednom od tih fajlova mora biti definisan simbol .start, ne smeju se preklapati adrese u memoriji i ne sme postojati visestruka definicija globalnih simbola. Prvi zadatak emulatora je da procita sve objekne fajlove i da konstruise svoje strukture podataka za sekcije i simbole. Drugi zadatak je da razresi sve realokacije koje su nastale tokom asembliranja i da izmeni masinski kod zbog nastalih realokacija. Treci zadatak emulatora je da desifruje masinski kod i da izvrsi asemblerski program pocev od simbola .start. Izlaz emulatora je tekstualni fajl koji ispisuje sve strukture podataka, deo memorije i sve registre.
  
 Uputstvo za prevodjenje
+
 Za prevodjenje je koriscen g++-6 paket. Za instalaciju paketa potrebne su sledece instrukcije:
+
 sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 sudo apt-get update
 sudo apt-get install gcc-6
 sudo apt-get install g++-6
 
 Sledeci korak je da se naprave biblioteke koje ce se koristiti u oba projekta. Prvo se svaki od .cpp fajlova prevede u objektni fajl, a potom se objektni fajlovi zapakuju u biblioteku komandama:
+
 g++-6 -c naziv.cpp -o ../../bin/static/tables/naziv.out
 g++-6 -c input.cpp -o ../../bin/static/input/input.out
 ar rcs libtables.a *.out
 ar rcs libinput.a *.out
 
 Poslednji korak je da se prevedu glavni projekti.
+
 Asembler:
 g++-6 *.h *.cpp -L../../bin/static/tables -ltables -o ../../bin/assembler.out
 
@@ -33,6 +39,7 @@ Emulator:
 g++-6 *.h *.cpp -L../../bin/static/tables -ltables -L../../bin/static/input       -linput -o ../../bin/emulator.out -pthread
 
 Za pokretanje:
+
 ./assembler.out ../tests/test1/test.txt 1100
 ./emulator.out assembler_test.txt
 
