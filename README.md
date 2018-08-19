@@ -19,15 +19,21 @@ Uputstvo za prevodjenje
 Za prevodjenje je koriscen g++-6 paket. Za instalaciju paketa potrebne su sledece instrukcije:
 
 sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+
 sudo apt-get update
+
 sudo apt-get install gcc-6
+
 sudo apt-get install g++-6
 
 Sledeci korak je da se naprave biblioteke koje ce se koristiti u oba projekta. Prvo se svaki od .cpp fajlova prevede u objektni fajl, a potom se objektni fajlovi zapakuju u biblioteku komandama:
 
 g++-6 -c naziv.cpp -o ../../bin/static/tables/naziv.out
+
 g++-6 -c input.cpp -o ../../bin/static/input/input.out
+
 ar rcs libtables.a *.out
+
 ar rcs libinput.a *.out
 
 Poslednji korak je da se prevedu glavni projekti.
